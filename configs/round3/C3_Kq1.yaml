@@ -1,0 +1,43 @@
+# Round-3 cell C3: K_q=1 ablation. Single question per image; tests whether
+# multi-Q consistency is necessary.
+# Per docs/inherited/ROUND3_POC_DESIGN.md §6.
+
+name: round3_C3_Kq1
+cell: C3
+
+model:
+  base_model: Qwen/Qwen2.5-VL-7B-Instruct
+  K: 16
+  lora_r: 32
+  stage1_attention_mask: true
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-7B-Instruct
+    - /data/joonhee/.cache/huggingface/hub/models--NOVAglow646--Monet-SFT-7B/snapshots/<TBD>/stage2
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.1
+  target_norm: 57.86
+  K_q: 1                                   # ablation
+  curriculum_warmup_steps: 200
+
+data:
+  mix: { gqa: 0.65, clevr: 0.25, tallyqa: 0.10 }
+  n_samples: 10000
+
+trainer:
+  variant: A
+  batch_size: 4
+  gradient_checkpointing: true
+  max_steps: 1000
+  lr_lora: 5e-5
+  lr_token: 5e-3
+  eval_every_steps: 100
+  ckpt_every_steps: 200
+  bf16: true
+
+wandb:
+  run_name: round3_C3_Kq1
+  tags: [round3, C3, ablation_Kq1]

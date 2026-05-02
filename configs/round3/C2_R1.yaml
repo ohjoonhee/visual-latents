@@ -1,0 +1,42 @@
+# Round-3 cell C2: R=1 ablation. Drops the Monet-SFT-7B anchor; tests whether
+# multi-anchor NLL is necessary or if single-anchor suffices.
+# Per docs/inherited/ROUND3_POC_DESIGN.md §6.
+
+name: round3_C2_R1
+cell: C2
+
+model:
+  base_model: Qwen/Qwen2.5-VL-7B-Instruct
+  K: 16
+  lora_r: 32
+  stage1_attention_mask: true
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-7B-Instruct          # R=1 only
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.1
+  target_norm: 57.86
+  K_q: 3
+  curriculum_warmup_steps: 200
+
+data:
+  mix: { gqa: 0.65, clevr: 0.25, tallyqa: 0.10 }
+  n_samples: 10000
+
+trainer:
+  variant: A
+  batch_size: 4
+  gradient_checkpointing: true
+  max_steps: 1000
+  lr_lora: 5e-5
+  lr_token: 5e-3
+  eval_every_steps: 100
+  ckpt_every_steps: 200
+  bf16: true
+
+wandb:
+  run_name: round3_C2_R1
+  tags: [round3, C2, ablation_R1]

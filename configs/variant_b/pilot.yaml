@@ -1,0 +1,44 @@
+# Variant B pilot (10K samples, decision-gated).
+# DEFERRED: Variant B is not implemented in v0.1.0. Per
+# docs/inherited/PROLIFERATED_PROJECT_PLAN.md §4.1 M3, Variant B runs only
+# after Variant A round-3 + M1 leave headroom.
+
+name: variant_b_pilot
+cell: variant_b_pilot
+
+model:
+  base_model: Qwen/Qwen2.5-VL-7B-Instruct
+  K: 16
+  lora_r: 32
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-7B-Instruct
+    - /data/joonhee/.cache/huggingface/hub/models--NOVAglow646--Monet-SFT-7B/snapshots/<TBD>/stage2
+
+loss:
+  K_q: 1                                    # GRPO is per-question
+
+data:
+  mix: { gqa: 0.50, clevr: 0.30, nlvr2: 0.20 }
+  n_samples: 10000
+
+trainer:
+  variant: B
+  batch_size: 4
+  max_steps: 2000
+  lr_lora: 1e-5                             # lower LR for RL
+  bf16: true
+
+vlpo:
+  sigma: 5.0
+  beta_latent: 0.04
+  beta_text: 0.0
+  group_size: 8
+  reward_kind: exact_match
+  multi_anchor_reward: true
+  random_control_negative_weight: 0.5
+
+wandb:
+  run_name: variant_b_pilot
+  tags: [variant_b, pilot, deferred]

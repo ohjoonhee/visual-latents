@@ -1,0 +1,44 @@
+# Local A6000 smoke test — 10 steps. Validates shapes, gradient flow, ckpt round-trip.
+# NOT a convergence test. Full recipe (R=2, K=16, B=4) needs 4×H100.
+
+name: smoke
+cell: smoke
+
+model:
+  base_model: Qwen/Qwen2.5-VL-7B-Instruct
+  K: 4                    # smaller for A6000
+  lora_r: 16              # smaller for A6000
+  stage1_attention_mask: true
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-7B-Instruct
+    # second anchor commented out — will add once Monet-SFT-7B-stage2 is on local disk
+    # - /path/to/Monet-SFT-7B/stage2
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.1
+  target_norm: 57.86
+  K_q: 2                  # smaller for A6000 memory
+  curriculum_warmup_steps: 2
+
+data:
+  mix:
+    gqa: 1.0              # smoke = GQA only
+  n_samples: 50
+
+trainer:
+  variant: A
+  batch_size: 1
+  gradient_checkpointing: true
+  max_steps: 10
+  lr_lora: 5e-5
+  lr_token: 5e-3
+  eval_every_steps: 5
+  ckpt_every_steps: 5
+
+wandb:
+  enabled: false          # smoke runs offline
+  run_name: smoke
+  tags: [smoke, local]

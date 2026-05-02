@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+# .python-version IS tracked — cross-machine Python pin
+
+# uv / venv
+.venv/
+.env
+.env.local
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project artifacts (stay out of git; sync via rsync from cluster)
+data/
+checkpoints/
+results/
+logs/
+wandb/
+outputs/
+*.pt
+*.safetensors
+*.bin
+*.ckpt
+
+# Notebooks (keep code, scrub outputs)
+notebooks/*.ipynb_checkpoints/
