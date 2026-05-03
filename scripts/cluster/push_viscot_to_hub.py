@@ -43,10 +43,15 @@ def main():
     private = (not args.public) and args.private
     print(f"[push] target repo: {args.repo}  private={private}")
 
-    # Verify HF_TOKEN is set.
-    if not os.environ.get("HF_TOKEN") and not os.environ.get("HUGGING_FACE_HUB_TOKEN"):
-        print("ERROR: HF_TOKEN (or HUGGING_FACE_HUB_TOKEN) not set in environment.")
-        print("       Either export HF_TOKEN=... or run `huggingface-cli login` first.")
+    # Verify some HF auth method works. Order: HF_TOKEN env var → cached
+    # ~/.cache/huggingface/token (from `huggingface-cli login`).
+    from huggingface_hub import HfApi
+    try:
+        whoami = HfApi().whoami()
+        print(f"[push] authenticated as: {whoami.get('name', '?')} (type={whoami.get('type', '?')})")
+    except Exception as e:
+        print(f"ERROR: HF auth failed: {e}")
+        print("       Either export HF_TOKEN=<write-token> or run `huggingface-cli login`.")
         return 1
 
     print(f"[push] loading train from {args.train}")
