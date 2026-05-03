@@ -1,0 +1,61 @@
+# Round-2 norm-regulariser diagnostic C2
+# (docs/INTERLEAVED_POC_RESULTS.md §9, follow-up C).
+#
+# Identical to interleaved_mini.yaml except:
+#   - interleaved.detach_recurrence_input: true
+#   - trainer.max_steps: 20
+#
+# Wraps `h_prev` in `.detach()` before feeding it as the next position's input
+# embedding inside a latent block (model.run_interleaved_forward). This BREAKS
+# the design — gradient no longer flows through the recurrence chain. Purely
+# diagnostic. If ‖h‖ now collapses to target the §6 self-sustaining-scale
+# hypothesis is confirmed.
+#
+# Run with:
+#   uv run python -m vl.train --config configs/diag/c2_detach_recurrence.yaml --variant interleaved
+
+name: interleaved_norm_diag/c2
+cell: interleaved_norm_diag/c2
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.1
+  target_norm: 57.86
+  K_q: 2
+  curriculum_warmup_steps: 10
+
+data:
+  mix:
+    gqa: 1.0
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 20
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 25
+  ckpt_every_steps: 25
+
+interleaved:
+  T_blocks: 2
+  k_latent: 4
+  use_synthetic_data: true
+  detach_recurrence_input: true   # the diagnostic — see model.py
+
+wandb:
+  enabled: false
+  run_name: interleaved_norm_diag/c2
+  tags: [interleaved, poc, local, diagnostic]

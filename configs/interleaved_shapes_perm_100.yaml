@@ -1,0 +1,55 @@
+# Interleaved POC — round-3 perm control on shapes data.
+# Identical to interleaved_shapes_100.yaml except permute_template=true.
+# Permutation: trace text + reader-scored (q, a) come from scene-A, but the
+# image fed to the recurrence is scene-B. This is a stronger control than
+# round-2 because the (q, a) is genuinely image-dependent (asks about shape
+# counts/colors); a model that fails to look at the image cannot get the
+# permuted (q, a) right by surface features.
+
+name: interleaved_shapes_perm_100
+cell: interleaved_shapes_perm_100
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.1
+  target_norm: 57.86
+  K_q: 2
+  curriculum_warmup_steps: 10
+  norm_weight_end: 0.1
+
+data:
+  mix:
+    gqa: 1.0
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 100
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 25
+  ckpt_every_steps: 25
+
+interleaved:
+  T_blocks: 2
+  k_latent: 4
+  use_synthetic_data: true
+  data_source: shapes
+  permute_template: true
+
+wandb:
+  enabled: false
+  run_name: interleaved_shapes_perm_100
+  tags: [interleaved, poc, local, shapes, perm]

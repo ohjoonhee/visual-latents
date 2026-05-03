@@ -10,7 +10,7 @@ field at the bottom. For Variant A runs the `vlpo` field is None.
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 import yaml
 
@@ -82,7 +82,7 @@ class TrainerConfig:
     optim: str = "adamw_torch"
     eval_every_steps: int = 100
     ckpt_every_steps: int = 200
-    max_time: Optional[str] = None        # e.g. "23h" for chained jobs
+    max_time: str | None = None        # e.g. "23h" for chained jobs
     resume: bool = False
     seed: int = 0
     bf16: bool = True
@@ -91,8 +91,8 @@ class TrainerConfig:
 @dataclass
 class WandBConfig:
     project: str = "visual-latents"
-    entity: Optional[str] = None
-    run_name: Optional[str] = None
+    entity: str | None = None
+    run_name: str | None = None
     tags: list[str] = field(default_factory=list)
     enabled: bool = True
 
@@ -109,6 +109,77 @@ class VLPOConfig:
     random_control_negative_weight: float = 0.5
 
 
+@dataclass
+class InterleavedConfig:
+    """Interleaved variant only. Coconut-style recurrence within latent spans.
+
+    Per `docs/INTERLEAVED_LATENT_DESIGN.md`:
+      - T_blocks: number of alternating latent spans (each preceded by a text segment).
+      - k_latent: number of latent positions per span; K_total = T_blocks * k_latent.
+      - templates_per_step: not used in the POC (templates sampled per example);
+        kept here for forward-compat with template-mixing curricula.
+    """
+
+    T_blocks: int = 2
+    k_latent: int = 4
+    # Optional: the trainer can use synthetic (template-driven) traces with
+    # placeholder data instead of MixedDataset. POC defaults to synthetic so
+    # the gradient probe is self-contained.
+    use_synthetic_data: bool = True
+    # Design §11.3 control: when true, build the trace text from a DIFFERENT
+    # template than the one that produced the (question, answer) the reader
+    # scores against. The latents are therefore conditioned on a mismatched
+    # trace; if NLL still drops as fast as the natural pairing, the model is
+    # learning trace-template surface form rather than using the latents.
+    permute_template: bool = False
+    # Round-2 norm-diagnostic C2 (docs/INTERLEAVED_POC_RESULTS.md §9). When
+    # True, the previous latent's hidden state is `.detach()`ed before being
+    # used as the next position's input embedding inside a latent block. This
+    # decouples the recurrence's scale propagation from autograd — purely a
+    # diagnostic for the self-sustaining-scale hypothesis. BREAKS the design
+    # (gradient no longer flows through the recurrence chain). Do not use as
+    # a default.
+    detach_recurrence_input: bool = False
+    # Round-3: switch the per-step example sampler. "synthetic" (default) keeps
+    # round-2 behaviour (solid-colour images + 5 hand-written templates).
+    # "gqa" loads real GQA records via `vl.data.gqa.load_gqa` and uses the
+    # generic trace template (`traces.GENERIC_TEMPLATE`) so the natural-
+    # language GQA questions do not need to fit category-specific placeholders.
+    data_source: Literal["synthetic", "gqa", "shapes", "viscot"] = "synthetic"
+    # Visual-CoT (round-4): the HF Hub repo with the preprocessed 50K subset
+    # (cluster build via slurm/preprocess_viscot.sbatch). Default points at the
+    # project owner's namespace; override per-machine via env if needed.
+    viscot_hub_repo: str = "ohjoonhee/visual-cot-50k-poc"
+    viscot_vsem_train: str = "data/viscot/viscot_50k_train_vsem.parquet"
+    viscot_vsem_eval: str = "data/viscot/viscot_1k_eval_vsem.parquet"
+    # Stage-1 → Stage-2 curriculum warmup (steps). w_grounding decays 1.0→0.3,
+    # w_nll ramps 0.0→1.0 over this window. Active only when vsem_full+vsem_crop
+    # are provided (data_source="viscot" with V_sem features available).
+    stage1_warmup_steps: int = 500
+    # When data_source="gqa", how many GQA train images to load into the pool
+    # the trainer samples from each step. Held-out eval uses a separate small
+    # set of testdev records (10 by construction), unaffected by this.
+    n_samples: int = 100
+    # Round-3 norm-diagnostic fix (b): apply the L_norm penalty ONLY to the
+    # FIRST latent of each block. Hypothesis: the recurrent positions inherit
+    # scale from the previous hidden state through the input-embedding feed,
+    # creating a self-sustaining magnitude that resists the scalar norm penalty.
+    # The first latent of each block is fed by the standard <|latent_start|>
+    # embedding (not by recurrence), so it should be steerable via the standard
+    # penalty. If THIS converges to target while baseline does not, the
+    # recurrence is the cause. Implemented in trainer.run_one_step by zeroing
+    # the standard norm contribution and adding back a custom term scoped to
+    # first-of-block positions. Diagnostic only; do not use as default.
+    first_latent_norm_only: bool = False
+    # Round-3 binding test (POC results §11.4): when True AND data_source=
+    # "shapes", each step samples K_q DIFFERENT (q, a) pairs from the same
+    # scene's GT instead of duplicating one. This restores the q-invariance
+    # pressure that the parallel method's `nll_multi_anchor` loss assumes —
+    # without it, h can specialise to encode just one (q, a) per step,
+    # producing the natural-vs-perm gap collapse observed in §11.3.
+    multi_q_per_image: bool = False
+
+
 # =============================================================================
 # Top-level config
 # =============================================================================
@@ -122,7 +193,8 @@ class Round3Config:
     data: DataConfig = field(default_factory=DataConfig)
     trainer: TrainerConfig = field(default_factory=TrainerConfig)
     wandb: WandBConfig = field(default_factory=WandBConfig)
-    vlpo: Optional[VLPOConfig] = None                        # Variant B only
+    vlpo: VLPOConfig | None = None                        # Variant B only
+    interleaved: InterleavedConfig | None = None          # Interleaved variant only
 
 
 # =============================================================================
@@ -143,4 +215,5 @@ def load_config(path: str | Path) -> Round3Config:
         trainer=TrainerConfig(**d.get("trainer", {})),
         wandb=WandBConfig(**d.get("wandb", {})),
         vlpo=VLPOConfig(**d["vlpo"]) if "vlpo" in d else None,
+        interleaved=InterleavedConfig(**d["interleaved"]) if "interleaved" in d else None,
     )

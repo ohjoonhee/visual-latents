@@ -1,0 +1,71 @@
+# Round-4 binding test: Visual-CoT + Mirage-style Stage-1 grounding.
+#
+# Each step: image + K_q=3 different (q, a) pairs about that image, with
+# pre-computed V_sem(full) and V_sem(crop) targets. Loss curriculum:
+#   Stage 1 (steps 0..499):   w_grounding 1.0 → 0.3, w_nll 0.0 → 1.0
+#   Stage 2 (steps 500..end): w_grounding 0.3,       w_nll 1.0
+#
+# Reader-2 frozen (no shared LoRA) per round-3 §11.5; norm regulariser OFF
+# per round-3 §10.6 (target_norm 57.86 was harmful for deep recurrent positions).
+#
+# Pass criteria for the binding test:
+#   - Held-out NLL drops by ≥1 nat over 1000 steps on natural pairing.
+#   - Natural beats perm by ≥0.5 nat at step 999.
+#   - ‖h‖ does not diverge (bounded above 250).
+#
+# Prerequisites:
+#   - cluster: slurm/preprocess_viscot.sbatch finished (HF Hub has the dataset).
+#   - local:   scripts/precompute_vsem_local.py finished (V_sem parquets local).
+
+name: interleaved_viscot_stage1_100
+cell: interleaved_viscot_stage1_100
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct   # shared with generator (R=1 reader)
+    - Qwen/Qwen2.5-VL-3B-Instruct   # FRESH frozen copy (R=2 reader)
+
+loss:
+  w_concept: 0.0                     # disabled — Stage-1 grounding replaces it
+  w_norm: 0.0                        # disabled per round-3 finding
+  target_norm: 57.86
+  K_q: 3                             # multi-Q for q-invariance
+  curriculum_warmup_steps: 10
+  norm_weight_end: 0.0               # disabled
+
+data:
+  mix:
+    gqa: 1.0                         # ignored by interleaved trainer
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 1000                    # extended; Stage-1 needs 500 + Stage-2 500
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 50
+  ckpt_every_steps: 100
+
+interleaved:
+  T_blocks: 2                        # block 1 → V_sem(full), block 2 → V_sem(crop)
+  k_latent: 4                        # K_total = 8
+  data_source: viscot
+  viscot_hub_repo: ohjoonhee/visual-cot-50k-poc
+  viscot_vsem_train: data/viscot/viscot_50k_train_vsem.parquet
+  viscot_vsem_eval:  data/viscot/viscot_1k_eval_vsem.parquet
+  stage1_warmup_steps: 500           # Stage-1 → Stage-2 transition
+  permute_template: false            # NATURAL (binding-test condition A)
+  multi_q_per_image: false           # viscot uses K_q from extra_qa_pairs directly
+
+wandb:
+  enabled: false
+  run_name: interleaved_viscot_stage1_100
+  tags: [interleaved, poc, local, viscot, stage1, R2, multi-q]

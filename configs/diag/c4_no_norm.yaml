@@ -1,0 +1,57 @@
+# Round-3 norm diagnostic (c4): drop the L_norm regulariser entirely.
+# Hypothesis: the L2 norm penalty toward target_norm=57.86 (calibrated for the
+# parallel method) is in tension with the natural high-norm regime of deep-
+# position hidden states in the Coconut-recurrent forward chain. Dropping it
+# may IMPROVE held-out NLL (no fight between regulariser and reader signal)
+# even though ||h|| will then drift higher.
+#
+# Compare to interleaved_shapes_100 (same data, full norm penalty).
+
+name: interleaved_norm_diag_c4
+cell: interleaved_norm_diag/c4
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.0                 # OFF
+  target_norm: 57.86          # ignored when norm_weight_end=0
+  K_q: 2
+  curriculum_warmup_steps: 5
+  norm_weight_end: 0.0        # OFF (this is the live setting per round-2 §9.1)
+
+data:
+  mix:
+    gqa: 1.0
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 30
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 100
+  ckpt_every_steps: 100
+
+interleaved:
+  T_blocks: 2
+  k_latent: 4
+  use_synthetic_data: true
+  data_source: shapes
+  permute_template: false
+  first_latent_norm_only: false
+
+wandb:
+  enabled: false
+  run_name: interleaved_norm_diag_c4
+  tags: [interleaved, poc, local, diag, no-norm]

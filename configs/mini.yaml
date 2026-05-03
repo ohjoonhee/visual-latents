@@ -1,0 +1,43 @@
+# Mini-training: 50 steps. Verifies sustained learning + gradient health.
+# Uses 3B for faster iteration; smoke.yaml is the canonical 7B variant.
+# NOT a convergence test.
+
+name: mini
+cell: mini
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 4
+  lora_r: 16
+  stage1_attention_mask: true
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.1
+  target_norm: 57.86
+  K_q: 2
+  curriculum_warmup_steps: 10
+
+data:
+  mix:
+    gqa: 1.0
+  n_samples: 60                  # >50 to leave headroom for the 50-step run
+
+trainer:
+  variant: A
+  batch_size: 1
+  gradient_checkpointing: true
+  max_steps: 50
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 25
+  ckpt_every_steps: 25
+
+wandb:
+  enabled: false
+  run_name: mini
+  tags: [mini, local]

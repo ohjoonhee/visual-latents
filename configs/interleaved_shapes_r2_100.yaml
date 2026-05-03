@@ -1,0 +1,65 @@
+# Round-3 — R=2 with truly-frozen second reader.
+# Round-3's diagnostic showed the natural-vs-perm gap collapsed when the
+# norm regulariser was removed, indicating the shared-LoRA reader (R=1)
+# was just memorising answers. This config adds a SECOND copy of the same
+# Qwen2.5-VL-3B-Instruct loaded fresh, frozen, no LoRA. Reader-2 cannot
+# be tuned to fit the answer distribution — it only contributes signal if
+# h actually encodes image-relevant information.
+#
+# Design test: does the natural-vs-perm gap re-emerge?
+#   Reader-1: shared with generator (LoRA-tuned alongside) — current behaviour
+#   Reader-2: frozen Qwen2.5-VL-3B-Instruct (no LoRA, no parameter updates)
+# nll_multi_anchor sums NLL across both readers → both gradients flow back
+# through h to the generator's LoRA + new_emb + concept_mlp.
+#
+# Expected VRAM: ~25 GB peak (12.7 GB for shared model + ~12 GB for the
+# second frozen copy). Comfortable on A6000 (48 GB).
+
+name: interleaved_shapes_r2_100
+cell: interleaved_shapes_r2_100
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct  # shared with generator (current)
+    - Qwen/Qwen2.5-VL-3B-Instruct  # FRESH copy: frozen, no LoRA — the binding test
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.0                    # disabled per round-3 finding
+  target_norm: 57.86
+  K_q: 2
+  curriculum_warmup_steps: 10
+  norm_weight_end: 0.0           # disabled
+
+data:
+  mix:
+    gqa: 1.0
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 100
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 25
+  ckpt_every_steps: 25
+
+interleaved:
+  T_blocks: 2
+  k_latent: 4
+  use_synthetic_data: true
+  data_source: shapes
+  permute_template: false
+
+wandb:
+  enabled: false
+  run_name: interleaved_shapes_r2_100
+  tags: [interleaved, poc, local, shapes, r2, no-norm]

@@ -13,8 +13,7 @@ model:
 anchors:
   paths:
     - Qwen/Qwen2.5-VL-7B-Instruct
-    - /data/joonhee/.cache/huggingface/hub/models--NOVAglow646--Monet-SFT-7B/snapshots/<TBD>/stage2
-    # path resolved after download; smoke verifies the snapshot dir on local
+    - NOVAglow646/Monet-SFT-7B            # HF id; resolves via HF_HOME cache on bioai
 
 loss:
   w_concept: 0.3

@@ -3,14 +3,16 @@
 #   sb slurm/round3_cell.sbatch configs/round3/C1_full.yaml
 #
 # NEVER agent-submitted. See ~/.claude/docs/bioai_cluster_spec.md MANDATORY policy.
+# Compliant with bioai cluster spec §2 (admin rules) and §3-G (cache redirects).
 #
 #SBATCH -J vl-round3
 #SBATCH -p gpu-4farm
 #SBATCH --account=gpu
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:h100:4
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=112
+#SBATCH --cpus-per-task=64                # admin guideline 32-64 for 4 GPUs (§2-F)
+#SBATCH --mem=512G
 #SBATCH -t 23:30:00
 #SBATCH -o logs/%x_%j.log
 #SBATCH -e logs/%x_%j.log
@@ -20,8 +22,22 @@ set -euo pipefail
 # --- env ---
 set -a; source .env; set +a
 export MACHINE=bioai
-module load cuda/12.6
-export CUDA_HOME=/opt/ohpc/pub/apps/cuda/12.6
+
+module purge                              # PDF examples always purge first
+module load cuda/13.0                     # matches torch 2.11.0+cu130 wheel
+export CUDA_HOME=/opt/ohpc/pub/apps/cuda/13.0
+
+# --- cache redirects (§3-G mandatory) ---
+# /tmp on compute nodes is RAM-tmpfs and counts against --mem; everything large
+# must redirect to /data. HF_HOME comes from ~/.bashrc on bioai.
+mkdir -p /data/joonhee/vl/tmp \
+         /data/joonhee/vl/cache/{triton,torch,torch-extensions} \
+         /data/joonhee/vl/wandb
+export TMPDIR=/data/joonhee/vl/tmp
+export TRITON_CACHE_DIR=/data/joonhee/vl/cache/triton
+export TORCH_HOME=/data/joonhee/vl/cache/torch
+export TORCH_EXTENSIONS_DIR=/data/joonhee/vl/cache/torch-extensions
+export WANDB_DIR=/data/joonhee/vl/wandb
 
 CONFIG="${1:?usage: sb slurm/round3_cell.sbatch configs/round3/CX.yaml}"
 

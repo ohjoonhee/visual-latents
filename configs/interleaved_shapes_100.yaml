@@ -1,0 +1,58 @@
+# Interleaved POC — round-3 pivot.
+# GQA isn't cached locally and downloading 50GB violates project constraints,
+# so we use a programmatic "shapes" dataset (CLEVR-spirit): 224x224 scenes
+# of 1-5 colored shapes (circle/square/triangle in red/blue/green/yellow)
+# with question/answer pairs that genuinely depend on image content
+# (count by color, presence of color+shape, color of unique shape).
+# This gives the latents real visual structure to encode while staying offline.
+#
+# Run with:
+#   MACHINE=local uv run python -m vl.train --config configs/interleaved_shapes_100.yaml --variant interleaved
+
+name: interleaved_shapes_100
+cell: interleaved_shapes_100
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.1
+  target_norm: 57.86
+  K_q: 2
+  curriculum_warmup_steps: 10
+  norm_weight_end: 0.1
+
+data:
+  mix:
+    gqa: 1.0       # ignored by interleaved trainer (data_source overrides)
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 100
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 25
+  ckpt_every_steps: 25
+
+interleaved:
+  T_blocks: 2
+  k_latent: 4
+  use_synthetic_data: true
+  data_source: shapes
+  permute_template: false
+
+wandb:
+  enabled: false
+  run_name: interleaved_shapes_100
+  tags: [interleaved, poc, local, shapes]

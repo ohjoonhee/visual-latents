@@ -1,17 +1,32 @@
 # Slurm — bioai cluster
 
 Project-specific cluster usage. Read `~/.claude/docs/bioai_cluster_spec.md`
-for the full cluster spec and the **MANDATORY usage policy** section.
+for the full cluster spec and the **MANDATORY usage policy** section. The
+cluster spec is the single source of truth; this file just summarizes how
+the project's templates use it.
 
 ## Hard rules (recap from cluster spec)
 
 **Server-admin rules** (binding on every job):
-- 1 GPU → `gpu-1farm` ONLY (`gpu-4farm --gres=gpu:1` is FORBIDDEN)
-- 4 GPUs → `gpu-4farm` ONLY
-- `gpu-8farm`, `gpu-h200`, `*-bf` partitions are FORBIDDEN unless per-job
-  admin authorization
+
+- 4-GPU jobs MUST use `gpu-4farm`. Every GPU job MUST set `--account=gpu`.
+- `gpu-1farm` was REMOVED. Working practice for 1-GPU work is
+  `-p gpu-4farm --gres=gpu:1`. Confirm with admin before scaling 1-GPU
+  campaigns.
+- `gpu-8farm`, `gpu-h200`, and any `-bf` variant are FORBIDDEN unless
+  admin authorizes that specific job.
+- Interactive `salloc`/`srun` are FORBIDDEN. Every workload — including
+  debug/sanity runs — goes through `sbatch`.
+- Login node has tight per-user systemd limits (~16 % CPU, ~16 GB mem).
+  Don't run multiprocessing/DataLoader on login.
+- For 4-GPU jobs, admin guideline is `--cpus-per-task` between 32 and 64
+  (NOT the 112 default).
+- Cache redirects (`TMPDIR`, `TRITON_CACHE_DIR`, `TORCH_HOME`,
+  `TORCH_EXTENSIONS_DIR`, `WANDB_DIR`) are mandatory — `/tmp` on compute
+  nodes is RAM-tmpfs and counts against `--mem=`.
 
 **Project-owner rule:**
+
 - No agent-initiated submission. Every `sb`/`sbatch` requires explicit user
   approval for that specific submission.
 
@@ -20,14 +35,17 @@ for the full cluster spec and the **MANDATORY usage policy** section.
 | File | Purpose | Partition | GPUs | Walltime |
 |---|---|---|---|---|
 | `slurm/round3_cell.sbatch` | one round-3 cell | gpu-4farm | 4 | 23h30m |
-| `slurm/eval.sbatch` | full eval suite for one checkpoint | gpu-1farm | 1 | 4h |
-| `slurm/interactive.sh` | salloc 1-GPU debug shell | gpu-1farm | 1 | 1h |
+| `slurm/eval.sbatch` | full eval suite for one checkpoint | gpu-4farm (`--gres=gpu:1`) | 1 | 4h |
+| `slurm/interactive.sh` | DEPRECATED (salloc forbidden); see comments | — | — | — |
 
-All templates:
-- Source `.env` first (`set -a; source .env; set +a`).
-- `module load cuda/12.6` then `export CUDA_HOME=...` (cuda module does NOT
-  set `$CUDA_HOME` itself — see cluster spec gotcha).
+All sbatch templates:
+
+- Source `.env` (`set -a; source .env; set +a`).
+- `module purge && module load cuda/12.6` then `export CUDA_HOME=...`
+  (cuda module does NOT set `$CUDA_HOME` itself — see cluster spec gotcha).
 - Set `MACHINE=bioai` for `vl.paths`.
+- Apply the cache redirect block (TMPDIR, TRITON_CACHE_DIR, TORCH_HOME,
+  TORCH_EXTENSIONS_DIR, WANDB_DIR → `/data/joonhee/vl/...`).
 - Use `sb` wrapper (preserves `$ORIG_SBATCH_SCRIPT` for Slack notify).
 - Slack-notify on start, end, fail, time-limit (using `$SLACK_WEBHOOK_URL`
   from `.env`).
@@ -44,8 +62,7 @@ sb slurm/round3_cell.sbatch configs/round3/C1_full.yaml
 # Eval one checkpoint (after explicit user "go"):
 sb slurm/eval.sbatch /data/joonhee/vl/checkpoints/<run_id>/
 
-# Interactive debugging:
-bash slurm/interactive.sh
+# Interactive debugging is forbidden on this cluster — submit a sbatch instead.
 ```
 
 ## Watching
@@ -69,12 +86,12 @@ tail -F logs/<jobname>_<jobid>.log
 
 ## Verification probes (proposed; require user approval to submit)
 
-1. Read-only: `ssh bioai 'sinfo -p gpu-1farm'` — confirm gpu-1farm exists +
-   spec it. Safe (no compute).
-2. CPU sbatch: 5-min `cpu-short` job that runs `uv sync` in a fresh clone —
-   confirms our pyproject.toml resolves on bioai.
-3. 1-GPU sbatch: 30-min `gpu-1farm` job that loads Qwen2.5-VL-7B-Instruct + a
-   batch of 1 image and runs forward — confirms cuda + transformers + the
+1. CPU sbatch (5 min on `cpu-short`): `uv sync` in a fresh clone — confirms
+   `pyproject.toml` resolves on bioai.
+2. 1-GPU sbatch (30 min on `gpu-4farm --gres=gpu:1`): load Qwen2.5-VL-7B
+   + a batch of 1 image + run forward — confirms cuda + transformers + the
    model load path.
+3. 4-GPU sbatch (10 min on `gpu-4farm`): just `nvidia-smi topo -m` and
+   `uv run pytest tests/` — confirms infrastructure end-to-end.
 
 These are templates; they are NOT submitted by the agent.

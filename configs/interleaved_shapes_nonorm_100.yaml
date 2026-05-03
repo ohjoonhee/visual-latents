@@ -1,0 +1,52 @@
+# Round-3 confirmatory: 100-step shapes natural with NO norm regulariser.
+# Diagnostic c4 (30 steps) showed dropping the norm penalty improves held-out
+# NLL by ~0.9 nat at matched step. This run validates the finding at 100
+# steps for direct comparison to interleaved_shapes_100 (same data, full norm).
+
+name: interleaved_shapes_nonorm_100
+cell: interleaved_shapes_nonorm_100
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.0
+  target_norm: 57.86
+  K_q: 2
+  curriculum_warmup_steps: 10
+  norm_weight_end: 0.0
+
+data:
+  mix:
+    gqa: 1.0
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 100
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 25
+  ckpt_every_steps: 25
+
+interleaved:
+  T_blocks: 2
+  k_latent: 4
+  use_synthetic_data: true
+  data_source: shapes
+  permute_template: false
+
+wandb:
+  enabled: false
+  run_name: interleaved_shapes_nonorm_100
+  tags: [interleaved, poc, local, shapes, no-norm]

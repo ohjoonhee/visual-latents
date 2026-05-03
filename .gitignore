@@ -33,6 +33,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Claude Code local state
+.claude/
+
 # Project artifacts (stay out of git; sync via rsync from cluster)
 data/
 checkpoints/

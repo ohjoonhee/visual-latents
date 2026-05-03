@@ -1,0 +1,51 @@
+# Round-3 binding-test perm control. multi-Q + R=2 + no-norm + perm.
+
+name: interleaved_shapes_multiq_r2_perm_100
+cell: interleaved_shapes_multiq_r2_perm_100
+
+model:
+  base_model: Qwen/Qwen2.5-VL-3B-Instruct
+  K: 8
+  lora_r: 16
+  stage1_attention_mask: false
+
+anchors:
+  paths:
+    - Qwen/Qwen2.5-VL-3B-Instruct
+    - Qwen/Qwen2.5-VL-3B-Instruct
+
+loss:
+  w_concept: 0.3
+  w_norm: 0.0
+  target_norm: 57.86
+  K_q: 3
+  curriculum_warmup_steps: 10
+  norm_weight_end: 0.0
+
+data:
+  mix:
+    gqa: 1.0
+  n_samples: 60
+
+trainer:
+  variant: interleaved
+  batch_size: 1
+  gradient_checkpointing: false
+  max_steps: 100
+  lr_lora: 5.0e-5
+  lr_token: 5.0e-3
+  eval_every_steps: 25
+  ckpt_every_steps: 25
+
+interleaved:
+  T_blocks: 2
+  k_latent: 4
+  use_synthetic_data: true
+  data_source: shapes
+  permute_template: true
+  multi_q_per_image: true
+
+wandb:
+  enabled: false
+  run_name: interleaved_shapes_multiq_r2_perm_100
+  tags: [interleaved, poc, local, shapes, multi-q, r2, no-norm, perm]

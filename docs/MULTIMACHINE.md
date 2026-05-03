@@ -5,7 +5,7 @@ The repo is git-synced between two machines:
 | Machine | Role | Hardware | Storage layout |
 |---|---|---|---|
 | `local` | smoke tests, analysis, doc edits | 1× A6000 49 GB | repo dir under `/mnt/ssd/Projects/visual-latents/`; data/ckpt/results/HF cache all default |
-| `bioai` | real training + eval | 4× H100 per job (gpu-4farm) or 1× H100 (gpu-1farm) | repo under `~/projects/visual-latents/` (GPFS home, code only); data/ckpt/results under `/data/joonhee/vl/` (GPFS data, 1.6 PB); HF cache `/data/joonhee/.cache/huggingface` (env in `~/.bashrc`) |
+| `bioai` | real training + eval | 4× H100 per job on `gpu-4farm` (1× H100 jobs use `gpu-4farm --gres=gpu:1`; `gpu-1farm` was removed by admin) | repo under `~/projects/visual-latents/` (GPFS home, code only); data/ckpt/results under `/data/joonhee/vl/` (GPFS data, 1.6 PB); HF cache `/data/joonhee/.cache/huggingface` (env in `~/.bashrc`) |
 
 `vl.paths` reads `MACHINE` env var (set in `.env`) and resolves all storage
 roots accordingly. Same code on both sides; no path edits.
