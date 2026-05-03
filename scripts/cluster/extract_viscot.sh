@@ -35,7 +35,12 @@ mkdir -p "${EXTRACT_DIR}"
 cd "${EXTRACT_DIR}"
 
 # List shards in order (shell glob is alphabetical so cot_images_00..12 sorts correctly).
-SHARDS=$(ls "${SHARDS_DIR}"/cot_images_* 2>/dev/null | sort)
+# Shards live under `cot_images_tar_split/` per the HF repo layout.
+SHARDS=$(ls "${SHARDS_DIR}"/cot_images_tar_split/cot_images_* 2>/dev/null | sort)
+if [ -z "${SHARDS}" ]; then
+    # Fallback for already-flattened layouts (e.g., older runs)
+    SHARDS=$(ls "${SHARDS_DIR}"/cot_images_* 2>/dev/null | sort)
+fi
 N_SHARDS=$(echo "${SHARDS}" | wc -l)
 echo "[extract] concatenating ${N_SHARDS} shards from ${SHARDS_DIR}"
 echo "${SHARDS}"
