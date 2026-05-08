@@ -1,0 +1,47 @@
+# Pivot A — Variant E: D2 recipe (VICReg λ_reg=2.0) with 2× training
+# Identical to pivot_a_vicreg_lambda2.yaml except:
+#   - max_steps: 2000 (was 1000)
+#   - warmup_steps: 200 (10% of total, scaled proportionally from 100)
+#   - out_dir: pivot_a/results/vicreg_lambda2_2k
+#   - save_every: 500 (checkpoints at 500/1000/1500/2000 for per-step ablation if needed)
+# Hypothesis: D2's semantic gap (n_helpful=2, qwen_base utility=+0.05) is an
+# undertraining artifact; with 2× steps and same recipe + scaled schedule,
+# n_helpful → ≥3 and utility → ≥+0.10.
+
+base_model: Qwen/Qwen2.5-VL-3B-Instruct
+
+K: 8
+lambda_lvr: 1.0
+loss_form: mean_d
+
+# Pivot A regularizer (same VICReg params as D2)
+reg_kind: vicreg
+lambda_reg: 2.0
+reg_var_w: 1.0
+reg_cov_w: 0.04
+reg_gamma: 1.0
+
+# Optim / schedule (warmup scaled 10% of total)
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 200
+max_steps: 2000
+grad_accum_steps: 4
+
+# Memory
+gradient_checkpointing: true
+
+# Image processor
+min_pixels: 3136
+max_pixels: 401408
+
+# Data
+train_split: train
+n_train_examples: 5000
+
+# Logging
+out_dir: pivot_a/results/vicreg_lambda2_2k
+log_every: 10
+save_every: 500
+
+seed: 0

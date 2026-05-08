@@ -16,11 +16,13 @@
   with even more negative utility (qwen_base −5.63 vs −4.76 OOD). The
   recipe-deviation hypothesis (no Stage 1 SFT, no per-position teacher) is
   the surviving explanation.
-- **Geometry is solved; semantics is not.** Across every PASSing variant
-  (C2, D2), `n_helpful` stays at 1–2 and `qwen_base_utility` at +0.04 to
-  +0.05. We bought the right cosine matrix but not the +2.19 nat utility
-  Monet stage 2 delivers. Experiment E (D2 at 2× steps) is the first probe
-  of whether undertraining explains the gap.
+- **Geometry is solved; semantics is partially structural.** Across every
+  PASSing variant (C2, D2, E), `n_helpful` stays at 1–2. Experiment E
+  (D2 at 2× steps) DID raise `qwen_base_utility` from +0.05 to **+0.088**
+  and `compression_ratio` from 0.79 to **0.875**, so the gap is partially
+  undertraining — but `n_helpful` did not move at 2× compute, indicating
+  a structural constraint (3B capacity, no Stage 1 SFT teacher, K=8 too
+  high for a 5K-example budget, or all three).
 
 ## Cross-experiment table
 
@@ -42,7 +44,8 @@ own protocol.
 | Pivot A C1 cos hinge | 0.713 | 0.725 | 2 | +0.051 | +0.376 | 0.465 | MARGINAL 2/4 |
 | Pivot A C2 VICReg | 0.672 | 0.441 | 1 | +0.044 | +0.340 | 0.465 | **PASS 3/4** |
 | Pivot A D1 VICReg+sumMSE | 0.787 | 0.987 | 2 | +0.078 | +0.052 | 0.465 | MARGINAL 2/4 |
-| **Pivot A D2 VICReg λ=2** | **0.792** | **0.341** | 2 | +0.050 | +0.366 | 0.465 | **PASS 3/4** |
+| **Pivot A D2 VICReg λ=2** | 0.792 | 0.341 | 2 | +0.050 | +0.366 | 0.465 | **PASS 3/4** |
+| **Pivot A E (D2 @ 2× steps)** | **0.875** | **0.389** | 2 | **+0.088** | +0.450 | 0.465 | **PASS 3/4** |
 
 The geometry column is the headline. C2 and D2 are the only runs all day
 that landed inside the [0.38, 0.55] Monet-stage-2-like band. Every other
@@ -155,17 +158,50 @@ n_helpful 1–2, qwen_base utility +0.04–0.08, self-reader utility
 does not, at 1000 steps × 5K examples × 3B params, translate into
 *content* the LLM can use.
 
-### Experiment E — undertraining vs structural? (placeholder)
+### Experiment E — undertraining vs structural? (D2 recipe @ 2000 steps)
 
-**[Pending — results expected ~13:55 KST. This section will be updated.]**
+E ran the D2 recipe (VICReg λ_reg=2, mean-MSE LVR, var=1.0, cov=0.04,
+γ=1.0) for 2× the step count (2000 instead of 1000, with warmup also
+scaled 100→200). PASS (3/4):
 
-Hypothesis: the semantic gap (n_helpful=2, utility~0.05) is a function
-of training compute, not of the regularizer choice. Doubling D2 to 2000
-steps should at minimum raise n_helpful and/or move qwen_base_utility
-toward Monet stage 2's +2.19 — even partially. If the gap closes, the
-cluster recipe should target ≥2000 steps. If it does not move, the
-3B-capacity hypothesis or the no-Stage-1-SFT hypothesis becomes more
-likely and we need to test those at 7B + Visual_CoT 125K.
+| criterion | E result | D2 (1000 steps) | delta |
+|---|---:|---:|---:|
+| compression_ratio (≥0.4) | **0.875** PASS | 0.792 PASS | +0.083 |
+| mean off-diag cos (≤0.55) | **0.389** PASS | 0.341 PASS | +0.048 |
+| n_helpful (≥3) | 2 FAIL | 2 FAIL | unchanged |
+| qwen_base utility (>0) | **+0.088** PASS | +0.050 PASS | +0.038 |
+| self-reader utility | +0.450 | +0.366 | +0.084 |
+| ntp final | 0.480 | 0.660 | −0.180 |
+| lvr final | 4.004 | 5.695 | −1.691 |
+
+The semantic-gap hypothesis is **partially validated, partially refuted.**
+With 2× training:
+- `qwen_base utility` rose from +0.050 to +0.088 (+76% relative). Real,
+  consistent semantic improvement.
+- `compression_ratio` rose from 0.792 to 0.875 — the latents carry more
+  per-position-distinct information that the reader can exploit.
+- `n_helpful` did **not** move — only positions 0 (margin +0.059) and 7
+  (margin +0.112) clear the 0.05-nat helpful threshold; the middle six
+  positions sit at margins 0.012–0.036, just *below* threshold but no
+  longer concentrated all on p7 as in D2 (which had only p7 individually
+  helpful).
+- mean off-diag cos relaxed slightly toward 0.389 (closer to Monet stage
+  2's 0.375 but slightly higher than D2's 0.341). The model traded a
+  little geometric tightness for compression-ratio and utility — the
+  geometry is still inside the target band.
+
+Reading: undertraining accounts for *some* of the semantic gap (~+0.04
+nat utility, +0.083 compression), but the n_helpful threshold is
+structural at this 3B/5K budget. The 6 middle positions stay just
+below 0.05-margin even after 2× compute. The no-Stage-1-SFT and
+3B-capacity hypotheses (#2 and #3 in "What's still open") are the
+remaining suspects.
+
+E's 8×8 cosine matrix is also instructive: every off-diagonal pair sits
+in [0.34, 0.41] except for p7 (which is at 0.34–0.35 from every other
+position) — a more uniform distribution than D2, where one outlier
+direction was emerging. Geometrically, E's hidden states are the
+cleanest distributed encoding we have produced.
 
 ## What's still open
 
@@ -211,12 +247,16 @@ only remaining unknowns are whether the semantic gap closes at scale
 and whether n_helpful rises with longer training and a larger base.
 This is the project's natural main thread.
 
-**Conditional:** if Experiment E (running) shows the semantic gap
-closes meaningfully at 2× steps locally, the cluster recipe should
-also use 2000+ steps (not the default 1000). If E does not move
-n_helpful or utility, the cluster run should additionally include a
-Stage 1 SFT pass before Pivot A — the no-Stage-1-SFT deviation
-becomes the most likely surviving cause of the semantic gap.
+**Updated with E:** the cluster recipe should use **at least 2000
+steps** — Experiment E confirms that `qwen_base utility` and
+`compression_ratio` continue to improve from 1000 to 2000 steps (+76%
+utility, +10% compression, NTP descends further from 0.66 to 0.48).
+E does NOT close the n_helpful gap (still 2/8 individually helpful at
+2000 steps), so the cluster run should ALSO include a Stage 1 SFT pass
+before Pivot A — the no-Stage-1-SFT deviation is now the most likely
+surviving cause of the semantic gap, since undertraining is partially
+ruled out and 7B/125K alone (without Stage 1 SFT) carries the same
+recipe risk as 3B/5K.
 
 **Not recommended:** further iteration on the attention-mask pathway
 (Phase 1.5c, etc.). Phase 1.5b's near-zero delta is sufficient evidence

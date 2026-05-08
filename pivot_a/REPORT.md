@@ -1,4 +1,4 @@
-# Pivot A — LVR + collapse-prevention regularizer (Experiments C & D)
+# Pivot A — LVR + collapse-prevention regularizer (Experiments C, D, E)
 
 ## TL;DR
 
@@ -8,31 +8,35 @@ many-to-one collapse of the K=8 latent slots:
 - **C2** VICReg variance + covariance on z-scored hidden states
 - **D1** (Exp D follow-up) VICReg + paper-faithful sum-MSE LVR (~D=2048× stronger LVR pressure)
 - **D2** (Exp D follow-up) VICReg with λ_reg=2.0 (double regularization weight)
+- **E**  (Exp E follow-up) D2 recipe at 2× steps (2000) — undertraining hypothesis
 
-Each variant is full FT of Qwen2.5-VL-3B-Instruct on 5K Visual-CoT for
-1000 steps (eff bsz=4, lr=1e-5, λ_LVR=1.0, seed=0). All other variables
-(data subset, K, schedule, prompt, ROI selection, eval split) are
-identical to Phase 1's `lvr_3b_5k.yaml`.
+Each variant is full FT of Qwen2.5-VL-3B-Instruct on 5K Visual-CoT
+(eff bsz=4, lr=1e-5, λ_LVR=1.0, seed=0). C1/C2/D1/D2 train for 1000
+steps; E trains for 2000 steps with proportionally scaled warmup (200).
+All other variables (data subset, K, prompt, ROI selection, eval split)
+are identical to Phase 1's `lvr_3b_5k.yaml`.
 
 - Verdict (Experiment C): **C1 cos-penalty** = MARGINAL (2/4); **C2 VICReg** = PASS (3/4).
 - Verdict (Experiment D follow-up): **D1 VICReg+sumMSE** = MARGINAL (2/4); **D2 VICReg λ_reg=2** = PASS (3/4).
-- Mean off-diag cos: C1=0.725, C2=0.441, D1=0.987, D2=0.341 (target ≤ 0.55).
+- Verdict (Experiment E — D2 @ 2× steps): **E** = PASS (3/4).
+- Mean off-diag cos: C1=0.725, C2=0.441, D1=0.987, D2=0.341, E=0.389 (target ≤ 0.55).
 - C1 reached target geometry (≤ 0.55)? **NO**.
 - C2 reached target geometry (≤ 0.55)? **YES**.
 - D1 reached target geometry (≤ 0.55)? **NO**.
 - D2 reached target geometry (≤ 0.55)? **YES**.
+- E  reached target geometry (≤ 0.55)? **YES**.
 - Pivot A hypothesis (any variant ≤ 0.55) is **SUPPORTED** at 3B/5K.
 
-## 7-column comparison
+## 8-column comparison
 
-| metric | Phase 1 run-1 | Phase 1.5b | C1 cos | C2 VICReg | **D1 VICReg+sumMSE** | **D2 VICReg λ_reg=2** | Monet stage 2 |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| compression_ratio (≥ 0.4) | 0.631 | 1.132 | 0.713 | 0.672 | **0.787** | **0.792** | 2.7 |
-| **mean off-diag cos (≤ 0.55)** | 0.851 | 0.961 | 0.725 | 0.441 | **0.987** | **0.341** | 0.38 |
-| n_helpful (≥ 3) | 1 | n/a | 2 | 1 | **2** | **2** | 4 |
-| qwen_base utility (> 0) | +0.077 | +0.030 | 0.051 | 0.044 | **0.078** | **0.050** | +2.7 |
-| utility (self reader) | +0.336 | +0.160 | 0.376 | 0.340 | **0.052** | **0.366** | +2.7 |
-| v_roi off-diag cos | 0.465 | 0.465 | 0.465 | 0.465 | **0.465** | **0.465** | n/a |
+| metric | Phase 1 run-1 | Phase 1.5b | C1 cos | C2 VICReg | D1 VICReg+sumMSE | D2 VICReg λ_reg=2 | **E D2-recipe @ 2k** | Monet stage 2 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| compression_ratio (≥ 0.4) | 0.631 | 1.132 | 0.713 | 0.672 | 0.787 | 0.792 | **0.875** | 2.7 |
+| **mean off-diag cos (≤ 0.55)** | 0.851 | 0.961 | 0.725 | 0.441 | 0.987 | 0.341 | **0.389** | 0.38 |
+| n_helpful (≥ 3) | 1 | n/a | 2 | 1 | 2 | 2 | **2** | 4 |
+| qwen_base utility (> 0) | +0.077 | +0.030 | 0.051 | 0.044 | 0.078 | 0.050 | **0.088** | +2.7 |
+| utility (self reader) | +0.336 | +0.160 | 0.376 | 0.340 | 0.052 | 0.366 | **0.380** | +2.7 |
+| v_roi off-diag cos | 0.465 | 0.465 | 0.465 | 0.465 | 0.465 | 0.465 | **0.465** | n/a |
 
 ## Acceptance per variant
 
@@ -74,6 +78,16 @@ identical to Phase 1's `lvr_3b_5k.yaml`.
 | mean off-diag cos ≤ 0.55 | PASS (0.341) |
 | n_helpful ≥ 3 | FAIL (2) |
 | qwen_base utility > 0 | PASS (0.050) |
+
+
+### E — D2 recipe @ 2000 steps (warmup=200, save_every=500) — PASS (3/4)
+
+| criterion | result |
+|---|---|
+| compression_ratio ≥ 0.4 | PASS (0.875) |
+| mean off-diag cos ≤ 0.55 | PASS (0.389) |
+| n_helpful ≥ 3 | FAIL (2) |
+| qwen_base utility > 0 | PASS (0.088) |
 
 
 ## C1 — per-position single-keep curve (pivot_a_cos_self reader)
@@ -212,21 +226,55 @@ mean off-diagonal cos = **0.341**
 Training summary: final step=1000 ntp=0.660 lvr=5.695 reg=11.758 ||h||=55.1 ||v||=95.9 elapsed=1343s
 
 
+## E — per-position single-keep curve (pivot_a_vicreg_lambda2_2k_self reader)
+
+```
+pos      nll   margin  bar
+  0     2.723   +0.059  █████  (helpful)
+  1     2.767   +0.014  █  
+  2     2.752   +0.029  ██  
+  3     2.748   +0.034  ███  
+  4     2.760   +0.021  ██  
+  5     2.769   +0.012  █  
+  6     2.745   +0.036  ███  
+  7     2.670   +0.112  █████████  (helpful)
+```
+
+## E — 8×8 cosine matrix (mean over eval set)
+
+```
+       p0  p1  p2  p3  p4  p5  p6  p7
+ p0  1.00  0.41  0.41  0.41  0.41  0.41  0.41  0.35
+ p1  0.41  1.00  0.40  0.40  0.41  0.40  0.40  0.35
+ p2  0.41  0.40  1.00  0.40  0.40  0.40  0.40  0.34
+ p3  0.41  0.40  0.40  1.00  0.40  0.40  0.39  0.34
+ p4  0.41  0.41  0.40  0.40  1.00  0.41  0.41  0.35
+ p5  0.41  0.40  0.40  0.40  0.41  1.00  0.40  0.35
+ p6  0.41  0.40  0.40  0.39  0.41  0.40  1.00  0.35
+ p7  0.35  0.35  0.34  0.34  0.35  0.35  0.35  1.00
+
+```
+
+mean off-diagonal cos = **0.389**
+
+Training summary: final step=2000 ntp=0.480 lvr=4.004 reg=11.753 ||h||=55.5 ||v||=76.0 elapsed=2688s
+
+
 ## Recipe
 
 - Base: Qwen/Qwen2.5-VL-3B-Instruct (vision tower + projector frozen, LLM full FT)
 - Loss: `L = L_NTP + λ_LVR · LVR + λ_reg · L_reg`
-  - C1, C2, D2: `LVR = F.mse_loss(h, v_roi)` (mean-MSE, scaled by D)
-  - D1:         `LVR = (1/T_v) · Σ_t ||h_t − v_t||²₂` (sum-over-D, paper-faithful)
+  - C1, C2, D2, E: `LVR = F.mse_loss(h, v_roi)` (mean-MSE, scaled by D)
+  - D1:            `LVR = (1/T_v) · Σ_t ||h_t − v_t||²₂` (sum-over-D, paper-faithful)
 - L_reg:
   - **C1** = `cos_penalty_loss(h, tau=0.5)` — squared hinge on `(C[i,j] − τ).clamp(min=0)`
-  - **C2/D1/D2** = `vicreg_loss(h, var_weight=1.0, cov_weight=0.04, gamma=1.0)`
+  - **C2/D1/D2/E** = `vicreg_loss(h, var_weight=1.0, cov_weight=0.04, gamma=1.0)`
     on z-scored h (per-dim across BK sample axis)
-- λ_reg: 1.0 for C1/C2/D1; 2.0 for D2.
+- λ_reg: 1.0 for C1/C2/D1; 2.0 for D2 and E.
 - Optimizer: AdamW lr=1e-5, weight_decay=0, betas=(0.9, 0.95)
-- Schedule: cosine, warmup=100, decay→0
+- Schedule: cosine, warmup=100 (C1–D2) / warmup=200 (E), decay→0
 - Batch: micro=1, grad_accum=4 → eff=4
-- Max steps: 1000
+- Max steps: 1000 for C1/C2/D1/D2; 2000 for E
 - bf16 + gradient_checkpointing
 - Data: `ohjoonhee/visual-cot-50k-poc` train, 5000 examples, seed=0
 - Eval: same dataset's `eval` split, first 200 examples (after seeded shuffle, seed=0)
@@ -245,3 +293,10 @@ Training summary: final step=1000 ntp=0.660 lvr=5.695 reg=11.758 ||h||=55.1 ||v|
   knows where but not what) closes.
 - **D2** (λ_reg=2.0): dose-response on the regularizer. Does mean cos drop
   closer to Monet stage 2's 0.38 with stronger reg?
+
+### What follow-up E was probing
+
+- **E** (D2 recipe @ 2000 steps): does D2's semantic gap (n_helpful=2,
+  qwen_base utility=+0.05) close with 2× training? If n_helpful → ≥3 and
+  utility → ≥+0.10, the gap is an undertraining artifact and Pivot A's
+  recipe is the natural choice for cluster Phase 3.

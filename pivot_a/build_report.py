@@ -1,10 +1,11 @@
-"""Build pivot_a/REPORT.md with the unified 7-column comparison.
+"""Build pivot_a/REPORT.md with the unified 8-column comparison.
 
-Reads results from all four variants (when present):
-  - C1 cos        → pivot_a/results/cos
-  - C2 vicreg     → pivot_a/results/vicreg
-  - D1 vicreg+sumMSE     → pivot_a/results/vicreg_summse
-  - D2 vicreg λ_reg=2.0  → pivot_a/results/vicreg_lambda2
+Reads results from all five variants (when present):
+  - C1 cos                  → pivot_a/results/cos
+  - C2 vicreg               → pivot_a/results/vicreg
+  - D1 vicreg+sumMSE        → pivot_a/results/vicreg_summse
+  - D2 vicreg λ_reg=2.0     → pivot_a/results/vicreg_lambda2
+  - E  vicreg λ_reg=2.0 2k  → pivot_a/results/vicreg_lambda2_2k
 
 Produces the combined report with per-variant per-position curves and
 8x8 cosine matrices.
@@ -20,6 +21,7 @@ RES_COS    = ROOT / "results" / "cos"
 RES_VIC    = ROOT / "results" / "vicreg"
 RES_SUMSSE = ROOT / "results" / "vicreg_summse"
 RES_LAMBDA2 = ROOT / "results" / "vicreg_lambda2"
+RES_E       = ROOT / "results" / "vicreg_lambda2_2k"
 
 
 def _read_jsonl(p: Path) -> list[dict]:
@@ -157,17 +159,18 @@ def main():
     vic     = _load_variant(RES_VIC,     "pivot_a_vicreg_self")
     summse  = _load_variant(RES_SUMSSE,  "pivot_a_vicreg_summse_self")
     lambda2 = _load_variant(RES_LAMBDA2, "pivot_a_vicreg_lambda2_self")
+    e_2k    = _load_variant(RES_E,       "pivot_a_vicreg_lambda2_2k_self")
 
-    # 7-column comparison (Phase 1 / Phase 1.5b numbers from prior reports).
+    # 8-column comparison (Phase 1 / Phase 1.5b numbers from prior reports).
     table = [
-        "| metric | Phase 1 run-1 | Phase 1.5b | C1 cos | C2 VICReg | **D1 VICReg+sumMSE** | **D2 VICReg λ_reg=2** | Monet stage 2 |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
-        f"| compression_ratio (≥ 0.4) | 0.631 | 1.132 | {fmt(cos['cr_self'])} | {fmt(vic['cr_self'])} | **{fmt(summse['cr_self'])}** | **{fmt(lambda2['cr_self'])}** | 2.7 |",
-        f"| **mean off-diag cos (≤ 0.55)** | 0.851 | 0.961 | {fmt(cos['mean_cos'])} | {fmt(vic['mean_cos'])} | **{fmt(summse['mean_cos'])}** | **{fmt(lambda2['mean_cos'])}** | 0.38 |",
-        f"| n_helpful (≥ 3) | 1 | n/a | {cos['nh_self']} | {vic['nh_self']} | **{summse['nh_self']}** | **{lambda2['nh_self']}** | 4 |",
-        f"| qwen_base utility (> 0) | +0.077 | +0.030 | {fmt(cos['util_base'])} | {fmt(vic['util_base'])} | **{fmt(summse['util_base'])}** | **{fmt(lambda2['util_base'])}** | +2.7 |",
-        f"| utility (self reader) | +0.336 | +0.160 | {fmt(cos['util_self'])} | {fmt(vic['util_self'])} | **{fmt(summse['util_self'])}** | **{fmt(lambda2['util_self'])}** | +2.7 |",
-        f"| v_roi off-diag cos | 0.465 | 0.465 | {fmt(cos['v_off'])} | {fmt(vic['v_off'])} | **{fmt(summse['v_off'])}** | **{fmt(lambda2['v_off'])}** | n/a |",
+        "| metric | Phase 1 run-1 | Phase 1.5b | C1 cos | C2 VICReg | D1 VICReg+sumMSE | D2 VICReg λ_reg=2 | **E D2-recipe @ 2k** | Monet stage 2 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        f"| compression_ratio (≥ 0.4) | 0.631 | 1.132 | {fmt(cos['cr_self'])} | {fmt(vic['cr_self'])} | {fmt(summse['cr_self'])} | {fmt(lambda2['cr_self'])} | **{fmt(e_2k['cr_self'])}** | 2.7 |",
+        f"| **mean off-diag cos (≤ 0.55)** | 0.851 | 0.961 | {fmt(cos['mean_cos'])} | {fmt(vic['mean_cos'])} | {fmt(summse['mean_cos'])} | {fmt(lambda2['mean_cos'])} | **{fmt(e_2k['mean_cos'])}** | 0.38 |",
+        f"| n_helpful (≥ 3) | 1 | n/a | {cos['nh_self']} | {vic['nh_self']} | {summse['nh_self']} | {lambda2['nh_self']} | **{e_2k['nh_self']}** | 4 |",
+        f"| qwen_base utility (> 0) | +0.077 | +0.030 | {fmt(cos['util_base'])} | {fmt(vic['util_base'])} | {fmt(summse['util_base'])} | {fmt(lambda2['util_base'])} | **{fmt(e_2k['util_base'])}** | +2.7 |",
+        f"| utility (self reader) | +0.336 | +0.160 | {fmt(cos['util_self'])} | {fmt(vic['util_self'])} | {fmt(summse['util_self'])} | {fmt(lambda2['util_self'])} | **{fmt(e_2k['util_self'])}** | +2.7 |",
+        f"| v_roi off-diag cos | 0.465 | 0.465 | {fmt(cos['v_off'])} | {fmt(vic['v_off'])} | {fmt(summse['v_off'])} | {fmt(lambda2['v_off'])} | **{fmt(e_2k['v_off'])}** | n/a |",
     ]
 
     def acc_block(v, name):
@@ -180,24 +183,27 @@ def main():
             f"| qwen_base utility > 0 | {'PASS' if v['crit']['qwen_base utility (>0)'] else 'FAIL'} ({fmt(v['util_base'])}) |\n"
         )
 
-    # Verdict summary lines (across all 4)
+    # Verdict summary lines (across all 5)
     cos_geom_hit     = (cos['mean_cos'] is not None and cos['mean_cos'] <= 0.55)
     vic_geom_hit     = (vic['mean_cos'] is not None and vic['mean_cos'] <= 0.55)
     summse_geom_hit  = (summse['mean_cos'] is not None and summse['mean_cos'] <= 0.55)
     lambda2_geom_hit = (lambda2['mean_cos'] is not None and lambda2['mean_cos'] <= 0.55)
-    pivot_a_supported = cos_geom_hit or vic_geom_hit or summse_geom_hit or lambda2_geom_hit
+    e_geom_hit       = (e_2k['mean_cos'] is not None and e_2k['mean_cos'] <= 0.55)
+    pivot_a_supported = cos_geom_hit or vic_geom_hit or summse_geom_hit or lambda2_geom_hit or e_geom_hit
 
     summary_lines = [
         f"- Verdict (Experiment C): **C1 cos-penalty** = {cos['overall']} ({cos['n_pass']}/4); "
         f"**C2 VICReg** = {vic['overall']} ({vic['n_pass']}/4).",
         f"- Verdict (Experiment D follow-up): **D1 VICReg+sumMSE** = {summse['overall']} ({summse['n_pass']}/4); "
         f"**D2 VICReg λ_reg=2** = {lambda2['overall']} ({lambda2['n_pass']}/4).",
+        f"- Verdict (Experiment E — D2 @ 2× steps): **E** = {e_2k['overall']} ({e_2k['n_pass']}/4).",
         f"- Mean off-diag cos: C1={fmt(cos['mean_cos'])}, C2={fmt(vic['mean_cos'])}, "
-        f"D1={fmt(summse['mean_cos'])}, D2={fmt(lambda2['mean_cos'])} (target ≤ 0.55).",
+        f"D1={fmt(summse['mean_cos'])}, D2={fmt(lambda2['mean_cos'])}, E={fmt(e_2k['mean_cos'])} (target ≤ 0.55).",
         f"- C1 reached target geometry (≤ 0.55)? **{'YES' if cos_geom_hit else 'NO'}**.",
         f"- C2 reached target geometry (≤ 0.55)? **{'YES' if vic_geom_hit else 'NO'}**.",
         f"- D1 reached target geometry (≤ 0.55)? **{'YES' if summse_geom_hit else 'NO'}**.",
         f"- D2 reached target geometry (≤ 0.55)? **{'YES' if lambda2_geom_hit else 'NO'}**.",
+        f"- E  reached target geometry (≤ 0.55)? **{'YES' if e_geom_hit else 'NO'}**.",
         f"- Pivot A hypothesis (any variant ≤ 0.55) is **{'SUPPORTED' if pivot_a_supported else 'REFUTED'}** at 3B/5K.",
     ]
 
@@ -220,7 +226,7 @@ mean off-diagonal cos = **{fmt(v['mean_cos'])}**
 Training summary: {v['train_summary']}
 """
 
-    body = f"""# Pivot A — LVR + collapse-prevention regularizer (Experiments C & D)
+    body = f"""# Pivot A — LVR + collapse-prevention regularizer (Experiments C, D, E)
 
 ## TL;DR
 
@@ -230,15 +236,17 @@ many-to-one collapse of the K=8 latent slots:
 - **C2** VICReg variance + covariance on z-scored hidden states
 - **D1** (Exp D follow-up) VICReg + paper-faithful sum-MSE LVR (~D=2048× stronger LVR pressure)
 - **D2** (Exp D follow-up) VICReg with λ_reg=2.0 (double regularization weight)
+- **E**  (Exp E follow-up) D2 recipe at 2× steps (2000) — undertraining hypothesis
 
-Each variant is full FT of Qwen2.5-VL-3B-Instruct on 5K Visual-CoT for
-1000 steps (eff bsz=4, lr=1e-5, λ_LVR=1.0, seed=0). All other variables
-(data subset, K, schedule, prompt, ROI selection, eval split) are
-identical to Phase 1's `lvr_3b_5k.yaml`.
+Each variant is full FT of Qwen2.5-VL-3B-Instruct on 5K Visual-CoT
+(eff bsz=4, lr=1e-5, λ_LVR=1.0, seed=0). C1/C2/D1/D2 train for 1000
+steps; E trains for 2000 steps with proportionally scaled warmup (200).
+All other variables (data subset, K, prompt, ROI selection, eval split)
+are identical to Phase 1's `lvr_3b_5k.yaml`.
 
 {chr(10).join(summary_lines)}
 
-## 7-column comparison
+## 8-column comparison
 
 {chr(10).join(table)}
 
@@ -252,6 +260,8 @@ identical to Phase 1's `lvr_3b_5k.yaml`.
 
 {acc_block(lambda2, "D2 — VICReg λ_reg=2.0 (var=1.0, cov=0.04, γ=1.0, mean-MSE LVR)")}
 
+{acc_block(e_2k,    "E — D2 recipe @ 2000 steps (warmup=200, save_every=500)")}
+
 {variant_section(cos,     "C1")}
 
 {variant_section(vic,     "C2")}
@@ -260,21 +270,23 @@ identical to Phase 1's `lvr_3b_5k.yaml`.
 
 {variant_section(lambda2, "D2")}
 
+{variant_section(e_2k,    "E")}
+
 ## Recipe
 
 - Base: Qwen/Qwen2.5-VL-3B-Instruct (vision tower + projector frozen, LLM full FT)
 - Loss: `L = L_NTP + λ_LVR · LVR + λ_reg · L_reg`
-  - C1, C2, D2: `LVR = F.mse_loss(h, v_roi)` (mean-MSE, scaled by D)
-  - D1:         `LVR = (1/T_v) · Σ_t ||h_t − v_t||²₂` (sum-over-D, paper-faithful)
+  - C1, C2, D2, E: `LVR = F.mse_loss(h, v_roi)` (mean-MSE, scaled by D)
+  - D1:            `LVR = (1/T_v) · Σ_t ||h_t − v_t||²₂` (sum-over-D, paper-faithful)
 - L_reg:
   - **C1** = `cos_penalty_loss(h, tau=0.5)` — squared hinge on `(C[i,j] − τ).clamp(min=0)`
-  - **C2/D1/D2** = `vicreg_loss(h, var_weight=1.0, cov_weight=0.04, gamma=1.0)`
+  - **C2/D1/D2/E** = `vicreg_loss(h, var_weight=1.0, cov_weight=0.04, gamma=1.0)`
     on z-scored h (per-dim across BK sample axis)
-- λ_reg: 1.0 for C1/C2/D1; 2.0 for D2.
+- λ_reg: 1.0 for C1/C2/D1; 2.0 for D2 and E.
 - Optimizer: AdamW lr=1e-5, weight_decay=0, betas=(0.9, 0.95)
-- Schedule: cosine, warmup=100, decay→0
+- Schedule: cosine, warmup=100 (C1–D2) / warmup=200 (E), decay→0
 - Batch: micro=1, grad_accum=4 → eff=4
-- Max steps: 1000
+- Max steps: 1000 for C1/C2/D1/D2; 2000 for E
 - bf16 + gradient_checkpointing
 - Data: `ohjoonhee/visual-cot-50k-poc` train, 5000 examples, seed=0
 - Eval: same dataset's `eval` split, first 200 examples (after seeded shuffle, seed=0)
@@ -293,6 +305,13 @@ identical to Phase 1's `lvr_3b_5k.yaml`.
   knows where but not what) closes.
 - **D2** (λ_reg=2.0): dose-response on the regularizer. Does mean cos drop
   closer to Monet stage 2's 0.38 with stronger reg?
+
+### What follow-up E was probing
+
+- **E** (D2 recipe @ 2000 steps): does D2's semantic gap (n_helpful=2,
+  qwen_base utility=+0.05) close with 2× training? If n_helpful → ≥3 and
+  utility → ≥+0.10, the gap is an undertraining artifact and Pivot A's
+  recipe is the natural choice for cluster Phase 3.
 """
 
     out_path = ROOT / "REPORT.md"
@@ -302,6 +321,7 @@ identical to Phase 1's `lvr_3b_5k.yaml`.
     print(f"C2: {vic['overall']} ({vic['n_pass']}/4)  mean_cos={fmt(vic['mean_cos'])}")
     print(f"D1: {summse['overall']} ({summse['n_pass']}/4)  mean_cos={fmt(summse['mean_cos'])}")
     print(f"D2: {lambda2['overall']} ({lambda2['n_pass']}/4)  mean_cos={fmt(lambda2['mean_cos'])}")
+    print(f"E : {e_2k['overall']} ({e_2k['n_pass']}/4)  mean_cos={fmt(e_2k['mean_cos'])}")
     print(f"Pivot A supported: {pivot_a_supported}")
 
 
