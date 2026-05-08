@@ -50,3 +50,13 @@ outputs/
 
 # Notebooks (keep code, scrub outputs)
 notebooks/*.ipynb_checkpoints/
+
+# Trained checkpoint contents (kept locally; do not commit)
+phase*/results/**/checkpoint/
+phase*/results/**/checkpoint*/
+phase*/teacher_reps/
+phase*/data/
+phase*/checkpoints/
+phase*/latents_student/
+phase*/results/*/latents/
+phase*/results/run_*/latents/

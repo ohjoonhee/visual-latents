@@ -145,7 +145,7 @@ class InterleavedConfig:
     # "gqa" loads real GQA records via `vl.data.gqa.load_gqa` and uses the
     # generic trace template (`traces.GENERIC_TEMPLATE`) so the natural-
     # language GQA questions do not need to fit category-specific placeholders.
-    data_source: Literal["synthetic", "gqa", "shapes", "viscot"] = "synthetic"
+    data_source: Literal["synthetic", "gqa", "shapes", "viscot", "grid"] = "synthetic"
     # Visual-CoT (round-4): the HF Hub repo with the preprocessed 50K subset
     # (cluster build via slurm/preprocess_viscot.sbatch). Default points at the
     # project owner's namespace; override per-machine via env if needed.
@@ -178,6 +178,14 @@ class InterleavedConfig:
     # without it, h can specialise to encode just one (q, a) per step,
     # producing the natural-vs-perm gap collapse observed in §11.3.
     multi_q_per_image: bool = False
+    # Overnight 2026-05-04: at end of training, run a latent-position ablation
+    # over the held-out set and write `results/<run>/ablation_eval.jsonl`. Each
+    # row scores reader-NLL with a SUBSET (or perturbation) of the K_total latent
+    # positions present, the rest replaced with zeros / random noise. Tests
+    # whether information is uniformly spread across positions (evidence-style)
+    # or concentrated in a small subset (compression-to-final-state, the
+    # predicted failure mode for state-tracking tasks under reader-NLL alone).
+    final_ablation_eval: bool = False
 
 
 # =============================================================================

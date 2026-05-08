@@ -1,0 +1,13 @@
+[extract] loading phase1_lvr/results_summse/checkpoint
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 63.10it/s]
+[extract] loading split=eval n=200
+  [done 1/200] elapsed=0s
+  [done 25/200] elapsed=3s
+  [done 50/200] elapsed=7s
+  [done 75/200] elapsed=10s
+  [done 100/200] elapsed=13s
+  [done 125/200] elapsed=16s
+  [done 150/200] elapsed=20s
+  [done 175/200] elapsed=23s
+  [done 200/200] elapsed=27s
+[extract] done. saved=200 elapsed=27s

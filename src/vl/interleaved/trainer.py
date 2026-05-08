@@ -347,6 +347,178 @@ def _sample_shapes_multiq_example(rng: random.Random, K_q: int, *, permute_templ
     return img_b, trace, extra_qa
 
 
+# ---------------------------------------------------------------------------
+# Grid path-tracking sampler (overnight 2026-05-04 — the "state-tracking" task
+# that contrasts with the evidence-style shapes task. Each example is a 3x3
+# grid (cells labeled A..I) with a marked start cell; the question is a short
+# sequence of moves, and the answer is the end cell letter. Intermediate
+# states (positions after each move) are NOT visible in the image — the model
+# must compute them. This is a planning/state-tracking task; latents naturally
+# play the role of "post-action state" rather than "evidence for the answer".
+# ---------------------------------------------------------------------------
+_GRID_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]   # row-major 3x3
+_GRID_MOVES = ["up", "down", "left", "right"]
+_GRID_DELTA = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
+
+
+def _idx_to_rc(idx: int) -> tuple[int, int]:
+    return idx // 3, idx % 3
+
+
+def _rc_to_idx(r: int, c: int) -> int:
+    return r * 3 + c
+
+
+def _apply_moves(start_idx: int, moves: list[str]) -> tuple[int, list[int]]:
+    """Apply moves sequentially with edge-clipping. Returns (end_idx, trajectory)."""
+    r, c = _idx_to_rc(start_idx)
+    traj = [start_idx]
+    for m in moves:
+        dr, dc = _GRID_DELTA[m]
+        nr = max(0, min(2, r + dr))
+        nc = max(0, min(2, c + dc))
+        r, c = nr, nc
+        traj.append(_rc_to_idx(r, c))
+    return traj[-1], traj
+
+
+def _make_grid_image_and_gt(rng: random.Random, *, n_moves_range=(2, 4)):
+    """Render a 3x3 labeled grid (224x224) with a marked start cell + GT.
+
+    Cells: 70x70 each, with 7px borders, centered in 224x224.
+    Start cell: red filled background; other cells: light gray.
+    Each cell has its letter label drawn in the top-left corner.
+
+    GT dict: start_idx, start_letter, all 9 letters, plus a SAMPLED move
+    sequence (so the same image can drive multiple Q variants if needed —
+    we sample one default sequence here; multi-Q sampler picks more).
+    """
+    img = Image.new("RGB", (224, 224), color=(245, 245, 245))
+    draw = ImageDraw.Draw(img)
+
+    # Layout: 3x3 grid centered with cell_w=70, gap=2 → 3*70 + 2*2 = 214; padding 5px.
+    cell_w = 70
+    gap = 2
+    pad = 5
+    start_idx = rng.randrange(9)
+    sr, sc = _idx_to_rc(start_idx)
+    for idx, letter in enumerate(_GRID_LABELS):
+        r, c = _idx_to_rc(idx)
+        x0 = pad + c * (cell_w + gap)
+        y0 = pad + r * (cell_w + gap)
+        x1 = x0 + cell_w
+        y1 = y0 + cell_w
+        if idx == start_idx:
+            fill = (220, 60, 60)   # red
+            txt_fill = (255, 255, 255)
+        else:
+            fill = (220, 220, 220)
+            txt_fill = (40, 40, 40)
+        draw.rectangle((x0, y0, x1, y1), fill=fill, outline=(80, 80, 80), width=2)
+        # Letter label in centre — don't bother loading a TTF; default font is OK.
+        # Approximate the label position; default font glyphs are ~6px wide at default size.
+        draw.text((x0 + cell_w // 2 - 4, y0 + cell_w // 2 - 6), letter, fill=txt_fill)
+        # Also a small top-left label so the model has a redundant cue
+        draw.text((x0 + 4, y0 + 4), letter, fill=txt_fill)
+
+    n_moves = rng.randint(n_moves_range[0], n_moves_range[1])
+    moves = [rng.choice(_GRID_MOVES) for _ in range(n_moves)]
+    end_idx, traj = _apply_moves(start_idx, moves)
+
+    return img, {
+        "start_idx": start_idx,
+        "start_letter": _GRID_LABELS[start_idx],
+        "moves": moves,
+        "end_idx": end_idx,
+        "end_letter": _GRID_LABELS[end_idx],
+        "trajectory": traj,
+        "letters": _GRID_LABELS,
+    }
+
+
+def _grid_question_text(moves: list[str]) -> str:
+    seq = ", ".join(moves)
+    return (
+        f"The agent starts at the marked red cell. It moves: {seq}. "
+        f"At which cell does the agent end? Answer with one letter."
+    )
+
+
+def _qa_from_grid_gt(rng: random.Random, gt: dict) -> tuple[str, str]:
+    """Build a single (question, answer) pair from a grid GT.
+
+    The default question uses the sampled move sequence in the GT. For multi-Q
+    we draw NEW move sequences from the same start cell.
+    """
+    return _grid_question_text(gt["moves"]), gt["end_letter"]
+
+
+def _sample_grid_example(rng: random.Random, *, permute_template: bool = False):
+    """One (image, trace) tuple for the grid state-tracking task.
+
+    Permutation control: scene-A drives the IMAGE (the marked start cell);
+    scene-B drives the (move_seq, end_cell) the reader scores. The reader
+    is asked to score "from the marked cell, do these moves, where do you end?"
+    — but the marked cell in the image is NOT the start cell that scene-B's
+    moves were applied to. If the latents encode true state, NLL on scene-B's
+    answer should be MUCH worse for scene-A's image.
+    """
+    img_a, gt_a = _make_grid_image_and_gt(rng)
+    if not permute_template:
+        q, a = _qa_from_grid_gt(rng, gt_a)
+        trace = sample_generic_trace(question=q, answer=a)
+        trace.category = "grid"
+        return img_a, trace
+
+    # Perm: image from scene-A, (q, a) from scene-B's start + moves
+    _img_b, gt_b = _make_grid_image_and_gt(rng)
+    q, a = _qa_from_grid_gt(rng, gt_b)
+    trace = sample_generic_trace(question=q, answer=a)
+    trace.category = "grid-perm"
+    return img_a, trace
+
+
+def _sample_grid_multiq_example(rng: random.Random, K_q: int, *, permute_template: bool = False):
+    """One image + K_q DIFFERENT (move_seq → end_cell) pairs from the same start.
+
+    Multi-Q version: same marked start cell, K_q distinct move sequences. Forces
+    h to encode the start position generically (not just one (q, a)). For perm:
+    image from scene-A, all K_q (q, a) computed against scene-B's start cell.
+    """
+    img_a, gt_a = _make_grid_image_and_gt(rng)
+
+    # Decide whose start cell drives the (q, a) answers
+    if not permute_template:
+        gt_for_qa = gt_a
+    else:
+        _img_b, gt_b = _make_grid_image_and_gt(rng)
+        gt_for_qa = gt_b
+
+    # Sample K_q distinct (move_seq, end_cell) pairs from the chosen start cell
+    seen_seqs: set[tuple[str, ...]] = set()
+    qa_pairs: list[tuple[str, str]] = []
+    attempts = 0
+    while len(qa_pairs) < K_q and attempts < 8 * K_q:
+        attempts += 1
+        n_moves = rng.randint(2, 4)
+        moves = tuple(rng.choice(_GRID_MOVES) for _ in range(n_moves))
+        if moves in seen_seqs:
+            continue
+        seen_seqs.add(moves)
+        end_idx, _ = _apply_moves(gt_for_qa["start_idx"], list(moves))
+        q = _grid_question_text(list(moves))
+        a = _GRID_LABELS[end_idx]
+        qa_pairs.append((q, a))
+    while len(qa_pairs) < K_q:
+        qa_pairs.append(qa_pairs[len(qa_pairs) % max(1, len(qa_pairs))])
+
+    q0, a0 = qa_pairs[0]
+    trace = sample_generic_trace(question=q0, answer=a0)
+    trace.category = "grid-multiq" + ("-perm" if permute_template else "")
+    extra_qa = qa_pairs[1:]
+    return img_a, trace, extra_qa
+
+
 def _sample_shapes_example(rng: random.Random, *, permute_template: bool = False):
     """Generate a shapes scene + matching (q, a) on a category-aligned template.
 
@@ -675,6 +847,227 @@ def _eval_heldout(
 
 
 # ---------------------------------------------------------------------------
+# Latent-position ablation eval (overnight 2026-05-04)
+# ---------------------------------------------------------------------------
+def _ablation_modes(K_total: int, T_blocks: int, k_latent: int) -> dict[str, list[int]]:
+    """Return ablation_name -> list of latent indices to KEEP (others zeroed).
+
+    K_total = T_blocks * k_latent. For T_blocks=2, k_latent=4 → K=8 → modes:
+      - all: keep [0..7]
+      - first_only: keep [0]
+      - last_only: keep [7]
+      - first_half: keep [0..3]
+      - last_half: keep [4..7]
+      - first_block: keep [0..3] (same as first_half when T_blocks=2)
+      - last_block: keep [4..7]
+      - first_of_each_block: keep [0, 4]
+      - last_of_each_block: keep [3, 7]
+      - none: keep [] (zeros baseline)
+    """
+    all_idx = list(range(K_total))
+    half = K_total // 2
+    modes: dict[str, list[int]] = {
+        "all": all_idx,
+        "first_only": [0],
+        "last_only": [K_total - 1],
+        "first_half": list(range(half)),
+        "last_half": list(range(half, K_total)),
+        "first_of_each_block": [b * k_latent for b in range(T_blocks)],
+        "last_of_each_block": [b * k_latent + k_latent - 1 for b in range(T_blocks)],
+        "none": [],
+    }
+    if T_blocks == 2 and K_total == 8:
+        # Aliases for clarity in the report
+        modes["first_block"] = modes["first_half"]
+        modes["last_block"] = modes["last_half"]
+    # Per-position single-keep modes: keep ONLY position i, zero the rest.
+    # Tells us whether information is concentrated in any single position.
+    for i in range(K_total):
+        modes[f"only_pos_{i}"] = [i]
+    return modes
+
+
+def _apply_ablation(h: torch.Tensor, keep_idx: list[int]) -> torch.Tensor:
+    """Return a tensor with same shape as h but positions outside keep_idx zeroed."""
+    out = torch.zeros_like(h)
+    if keep_idx:
+        idx_t = torch.tensor(keep_idx, device=h.device, dtype=torch.long)
+        out[:, idx_t, :] = h[:, idx_t, :]
+    return out
+
+
+def _run_ablation_eval(
+    *,
+    model,
+    new_emb,
+    new_token_ids: dict,
+    processor,
+    anchors,
+    eval_records: list,
+    cfg,
+    out_path: Path,
+) -> None:
+    """For each held-out example, score reader-NLL under each ablation mode.
+
+    Writes one JSONL per (mode, anchor_idx) aggregated across the eval set.
+    Format: {"mode": str, "keep": [idx,...], "anchor": int,
+             "nll_mean": float, "nll_per_example": [float, ...], "n": int}
+    """
+    from ..readers import forward_anchor
+
+    K_total = int(cfg.interleaved.T_blocks) * int(cfg.interleaved.k_latent)
+    modes = _ablation_modes(
+        K_total=K_total,
+        T_blocks=int(cfg.interleaved.T_blocks),
+        k_latent=int(cfg.interleaved.k_latent),
+    )
+
+    was_training = model.training
+    model.eval()
+    rows: list[dict] = []
+    # h-diagnostics computed once from the cached h's; attached to every per-
+    # mode row below (additive — does not depend on the ablation mode itself).
+    # See `_h_stats` row at the end for the canonical singleton record.
+    h_norms_per_pos: list[float] | None = None
+    pairwise_cosine: list[list[float]] | None = None
+    mean_off_diag_cos: float | None = None
+    try:
+        with torch.no_grad():
+            # First pass: compute h once per held-out example, then re-use for
+            # every ablation mode (no need to re-run the recurrence each time).
+            h_cache: list[tuple[torch.Tensor, str, str]] = []
+            for image, trace in eval_records:
+                h = run_interleaved_forward(
+                    model=model,
+                    new_emb=new_emb,
+                    new_token_ids=new_token_ids,
+                    processor=processor,
+                    image=image,
+                    trace=trace,
+                    detach_recurrence_input=False,
+                )  # [1, K_total, D]
+                h_cache.append((h, trace.question, trace.answer))
+
+            # ---- Compute h-diagnostics up-front so we can attach them to
+            # every per-mode/anchor row. These three fields mirror Phase 0's
+            # `phase0_monet_probe/h_stats.jsonl` schema and are reader- and
+            # ablation-mode-agnostic (they describe the raw h before any
+            # ablation is applied).
+            if h_cache:
+                H_diag = torch.cat([h for h, _, _ in h_cache], dim=0)  # [N, K, D]
+                per_pos_norm_t = H_diag.float().norm(dim=-1).mean(dim=0)  # [K]
+                H_diag_norm = H_diag.float() / (
+                    H_diag.float().norm(dim=-1, keepdim=True).clamp_min(1e-6)
+                )
+                # Per-example KxK cosine, then mean across examples.
+                cos_mean_t = torch.stack(
+                    [H_diag_norm[n] @ H_diag_norm[n].T for n in range(H_diag.shape[0])],
+                    dim=0,
+                ).mean(dim=0)  # [K, K]
+                h_norms_per_pos = per_pos_norm_t.tolist()
+                pairwise_cosine = cos_mean_t.tolist()
+                K_diag = cos_mean_t.shape[0]
+                if K_diag > 1:
+                    # Mean of the K*(K-1)/2 unique off-diagonal entries
+                    # (upper triangle only, excluding the diagonal). Symmetric
+                    # by construction so this equals the full off-diag mean.
+                    iu = torch.triu_indices(K_diag, K_diag, offset=1)
+                    mean_off_diag_cos = float(cos_mean_t[iu[0], iu[1]].mean().item())
+                else:
+                    mean_off_diag_cos = float("nan")
+
+            # Per-mode pass
+            for mode_name, keep_idx in modes.items():
+                for anchor_idx, anchor in enumerate(anchors):
+                    nlls: list[float] = []
+                    for h, q, a in h_cache:
+                        h_ab = _apply_ablation(h, keep_idx)
+                        loss = forward_anchor(anchor, h_ab, [q], [a], K=K_total)
+                        nlls.append(float(loss.item()))
+                    row = {
+                        "mode": mode_name,
+                        "keep": keep_idx,
+                        "anchor": anchor_idx,
+                        "nll_mean": sum(nlls) / max(1, len(nlls)),
+                        "nll_per_example": nlls,
+                        "n": len(nlls),
+                    }
+                    # Additive h-diagnostic fields (Phase-0 schema). These are
+                    # identical across (mode, anchor) within one eval call —
+                    # duplicated per-row so each evaluation cell carries its
+                    # own copy without a cross-row join.
+                    if h_norms_per_pos is not None:
+                        row["h_norms_per_pos"] = h_norms_per_pos
+                        row["pairwise_cosine"] = pairwise_cosine
+                        row["mean_off_diag_cos"] = mean_off_diag_cos
+                    rows.append(row)
+                    print(
+                        f"[ablation] mode={mode_name:24s} anchor={anchor_idx} "
+                        f"keep={len(keep_idx)}/{K_total} "
+                        f"nll_mean={rows[-1]['nll_mean']:.3f}"
+                    )
+    finally:
+        if was_training:
+            model.train()
+
+    # ---- h-statistics: per-position norms + pairwise cosine ----
+    # Tells us whether the K positions encode similar or distinct things.
+    # Concatenate h across the eval set, then per-position norms and the
+    # pairwise cosine matrix.
+    # NOTE: kept for backward-compat with the existing `_h_stats` consumer in
+    # `scripts/analyse_overnight.py`. The same numbers are now also attached
+    # to every per-mode row above under the Phase-0 field names
+    # (`h_norms_per_pos`, `pairwise_cosine`, `mean_off_diag_cos`).
+    if h_cache:
+        H = torch.cat([h for h, _, _ in h_cache], dim=0)  # [N, K, D]
+        per_pos_norm = H.float().norm(dim=-1).mean(dim=0)  # [K]
+        H_norm = H.float() / (H.float().norm(dim=-1, keepdim=True).clamp_min(1e-6))
+        # Mean cosine matrix across eval examples
+        cos_mats = []
+        for n in range(H.shape[0]):
+            cos_mats.append(H_norm[n] @ H_norm[n].T)  # [K, K]
+        cos_mean = torch.stack(cos_mats, dim=0).mean(dim=0)  # [K, K]
+        h_stats = {
+            "per_pos_mean_norm": per_pos_norm.tolist(),
+            "pairwise_cosine_mean": cos_mean.tolist(),
+        }
+        # Singleton row: keep the original two fields unchanged, ALSO add the
+        # Phase-0-named fields and `mean_off_diag_cos` scalar at the top level
+        # so a reader that only inspects `_h_stats` gets the new diagnostic
+        # without having to compute it from `pairwise_cosine_mean`.
+        h_stats_row = {
+            "mode": "_h_stats",
+            "h_stats": h_stats,
+            "n": int(H.shape[0]),
+        }
+        if h_norms_per_pos is not None:
+            h_stats_row["h_norms_per_pos"] = h_norms_per_pos
+            h_stats_row["pairwise_cosine"] = pairwise_cosine
+            h_stats_row["mean_off_diag_cos"] = mean_off_diag_cos
+        rows.append(h_stats_row)
+        # Print compact summary
+        print("[ablation] per-position mean ||h||: " +
+              ", ".join(f"{i}={v:.1f}" for i, v in enumerate(per_pos_norm.tolist())))
+        # Average pairwise cosine (off-diagonal): a measure of "are positions distinct?"
+        K = cos_mean.shape[0]
+        if K > 1:
+            mask = ~torch.eye(K, dtype=torch.bool, device=cos_mean.device)
+            avg_off_diag = cos_mean[mask].mean().item()
+            print(f"[ablation] avg off-diagonal pairwise cosine: {avg_off_diag:.3f} "
+                  f"(0 = orthogonal, 1 = identical)")
+            if mean_off_diag_cos is not None:
+                # Sanity: full off-diag mean (avg_off_diag, K*(K-1) entries) vs
+                # unique upper-tri mean (mean_off_diag_cos, K*(K-1)/2 entries).
+                # For a symmetric matrix these are equal up to fp roundoff.
+                print(f"[ablation] mean_off_diag_cos (unique pairs): {mean_off_diag_cos:.3f}")
+
+    with out_path.open("w") as f:
+        for row in rows:
+            f.write(json.dumps(row) + "\n")
+    print(f"[ablation] wrote {len(rows)} rows to {out_path}")
+
+
+# ---------------------------------------------------------------------------
 # Main training entry
 # ---------------------------------------------------------------------------
 def train(cfg) -> None:
@@ -807,9 +1200,9 @@ def train(cfg) -> None:
         print(f"[interleaved] data_source=viscot — loading {hub_repo}...")
         viscot_train = ViscotDataset(hub_repo=hub_repo, vsem_parquet=train_vsem, split="train")
         viscot_eval = ViscotDataset(hub_repo=hub_repo, vsem_parquet=eval_vsem, split="eval")
-    elif data_source not in ("synthetic", "shapes"):
+    elif data_source not in ("synthetic", "shapes", "grid"):
         raise ValueError(
-            f"InterleavedConfig.data_source must be 'synthetic' | 'gqa' | 'shapes' | 'viscot'; "
+            f"InterleavedConfig.data_source must be 'synthetic' | 'gqa' | 'shapes' | 'viscot' | 'grid'; "
             f"got {data_source!r}"
         )
 
@@ -843,6 +1236,15 @@ def train(cfg) -> None:
         # with its own ground truth — so eval is comparable across runs.
         eval_records = [
             _sample_shapes_example(eval_rng, permute_template=False)
+            for _ in range(n_eval)
+        ]
+    elif data_source == "grid":
+        # Held-out: 10 fresh grid scenes, each scored against its NATURAL
+        # (move_seq, end_cell). Eval is always natural regardless of training
+        # perm flag — so the held-out NLL trajectory is directly comparable
+        # across natural / perm runs.
+        eval_records = [
+            _sample_grid_example(eval_rng, permute_template=False)
             for _ in range(n_eval)
         ]
     elif data_source == "viscot":
@@ -901,6 +1303,16 @@ def train(cfg) -> None:
                     )
                 else:
                     image, trace = _sample_shapes_example(
+                        rng, permute_template=permute_template,
+                    )
+            elif data_source == "grid":
+                if multi_q:
+                    image, trace, extra_qa = _sample_grid_multiq_example(
+                        rng, K_q=max(1, cfg.loss.K_q),
+                        permute_template=permute_template,
+                    )
+                else:
+                    image, trace = _sample_grid_example(
                         rng, permute_template=permute_template,
                     )
             elif data_source == "viscot":
@@ -995,3 +1407,20 @@ def train(cfg) -> None:
         with contextlib.suppress(Exception):
             losses_jsonl.close()
             eval_jsonl.close()
+
+    # ---- Latent-position ablation eval (overnight 2026-05-04) ----
+    # Runs ONLY at the end of training, on the held-out eval set, and only if
+    # the flag is set. Writes results/<run>/ablation_eval.jsonl with one row
+    # per (mode, anchor). See `_ablation_modes` for the catalog.
+    if bool(getattr(cfg.interleaved, "final_ablation_eval", False)):
+        print("[interleaved] running final latent-position ablation eval...")
+        _run_ablation_eval(
+            model=model,
+            new_emb=new_emb,
+            new_token_ids=new_token_ids,
+            processor=processor,
+            anchors=anchors,
+            eval_records=eval_records,
+            cfg=cfg,
+            out_path=results_dir / "ablation_eval.jsonl",
+        )

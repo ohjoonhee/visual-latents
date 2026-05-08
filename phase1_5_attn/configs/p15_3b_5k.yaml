@@ -1,0 +1,25 @@
+# Phase 1.5 — canonical 1000-step run, mirrors Phase 1 run 1
+base_model: Qwen/Qwen2.5-VL-3B-Instruct
+
+K: 8
+lambda_lvr: 1.0
+
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 100
+max_steps: 1000
+grad_accum_steps: 4
+
+gradient_checkpointing: true
+
+min_pixels: 3136
+max_pixels: 401408
+
+train_split: train
+n_train_examples: 5000
+
+out_dir: phase1_5_attn/results/run_p15
+log_every: 10
+save_every: 0   # disabled to save disk; final-only
+
+seed: 0

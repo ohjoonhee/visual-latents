@@ -1,0 +1,34 @@
+# Phase 2 — smoke (10 steps)
+base_model: Qwen/Qwen2.5-VL-3B-Instruct
+
+latent_size: 8
+ce_emphasize_factor: 4.0
+alignment_weight: 2.0
+emphasize_latent_weight: 2.0
+alignment_layer: all_layers
+
+lr: 1.0e-5
+weight_decay: 0.01
+warmup_steps: 10
+max_steps: 10
+grad_accum_steps: 16
+
+gradient_checkpointing: true
+
+# image cap (matches upstream stage 2 defaults)
+global_max_pixels: 784000  # 1000 * 28 * 28
+per_img_pixels: 392000     # 500 * 28 * 28
+min_pixels: 3136
+max_pixels: 784000
+
+n_train_examples: 10
+
+data_path: phase0_monet_probe/data/Monet-SFT-125K/Visual_CoT/train.json
+dataset_root: phase0_monet_probe/data/Monet-SFT-125K
+teacher_reps_dir: phase2_monet_stage2/teacher_reps
+
+out_dir: phase2_monet_stage2/results/smoke
+log_every: 1
+save_every: 0
+
+seed: 0

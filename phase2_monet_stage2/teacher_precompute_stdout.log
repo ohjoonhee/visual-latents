@@ -1,0 +1,126 @@
+🚨 `attention_mask_4d` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `attention_mask_4d` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_factor` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `loss_type` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `output_latent_embeds` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `compute_emphasize_acc` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+[teacher-precompute] loading Qwen/Qwen2.5-VL-3B-Instruct
+You have video processor config saved in `preprocessor.json` file which is deprecated. Video processor configs should be saved in their own `video_preprocessor.json` file. You can rename the file or load and save the processor back which renames it automatically. Loading from `preprocessor.json` will be removed in v5.0.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 60.20it/s]
+[teacher-precompute] loading /mnt/ssd/Projects/visual-latents/phase0_monet_probe/data/Monet-SFT-125K/Visual_CoT/train.json
+[teacher-precompute] 118561 rows; sampling last 10000 rows, n=5000
+[teacher-precompute] accepted=5000  skipped=21
+[teacher-precompute] wrote phase2_monet_stage2/teacher_reps/manifest.json
+  [done 1/5000] sid=118334 obs_n=4 rep_shape=(37, 4, 2048) elapsed=0.3s rate=1.00/s
+  [done 50/5000] sid=113508 obs_n=5 rep_shape=(37, 5, 2048) elapsed=6.3s rate=7.90/s
+  [done 100/5000] sid=116926 obs_n=3 rep_shape=(37, 3, 2048) elapsed=11.7s rate=8.53/s
+  [done 150/5000] sid=114778 obs_n=4 rep_shape=(37, 4, 2048) elapsed=17.2s rate=8.70/s
+  [done 200/5000] sid=112787 obs_n=7 rep_shape=(37, 7, 2048) elapsed=22.7s rate=8.82/s
+  [done 250/5000] sid=110373 obs_n=7 rep_shape=(37, 7, 2048) elapsed=28.7s rate=8.71/s
+  [done 300/5000] sid=109985 obs_n=9 rep_shape=(37, 9, 2048) elapsed=34.4s rate=8.71/s
+  [done 350/5000] sid=112488 obs_n=3 rep_shape=(37, 3, 2048) elapsed=39.9s rate=8.76/s
+  [done 400/5000] sid=115103 obs_n=4 rep_shape=(37, 4, 2048) elapsed=46.2s rate=8.67/s
+  [done 450/5000] sid=113669 obs_n=4 rep_shape=(37, 4, 2048) elapsed=51.7s rate=8.71/s
+  [done 500/5000] sid=113722 obs_n=5 rep_shape=(37, 5, 2048) elapsed=57.9s rate=8.63/s
+  [done 550/5000] sid=111800 obs_n=5 rep_shape=(37, 5, 2048) elapsed=64.0s rate=8.59/s
+  [done 600/5000] sid=112384 obs_n=5 rep_shape=(37, 5, 2048) elapsed=69.9s rate=8.58/s
+  [done 650/5000] sid=112676 obs_n=5 rep_shape=(37, 5, 2048) elapsed=75.4s rate=8.62/s
+  [done 700/5000] sid=114876 obs_n=2 rep_shape=(37, 2, 2048) elapsed=80.6s rate=8.68/s
+  [done 750/5000] sid=114564 obs_n=5 rep_shape=(37, 5, 2048) elapsed=86.7s rate=8.65/s
+  [done 800/5000] sid=112492 obs_n=5 rep_shape=(37, 5, 2048) elapsed=92.2s rate=8.67/s
+  [done 850/5000] sid=108737 obs_n=5 rep_shape=(37, 5, 2048) elapsed=97.6s rate=8.71/s
+  [done 900/5000] sid=117436 obs_n=4 rep_shape=(37, 4, 2048) elapsed=103.2s rate=8.72/s
+  [done 950/5000] sid=118077 obs_n=3 rep_shape=(37, 3, 2048) elapsed=108.6s rate=8.74/s
+  [done 1000/5000] sid=115044 obs_n=5 rep_shape=(37, 5, 2048) elapsed=114.2s rate=8.75/s
+  [done 1050/5000] sid=114158 obs_n=2 rep_shape=(37, 2, 2048) elapsed=119.8s rate=8.77/s
+  [done 1100/5000] sid=110122 obs_n=2 rep_shape=(37, 2, 2048) elapsed=126.0s rate=8.73/s
+  [done 1150/5000] sid=118375 obs_n=5 rep_shape=(37, 5, 2048) elapsed=132.4s rate=8.69/s
+  [done 1200/5000] sid=112789 obs_n=3 rep_shape=(37, 3, 2048) elapsed=137.6s rate=8.72/s
+  [done 1250/5000] sid=118064 obs_n=3 rep_shape=(37, 3, 2048) elapsed=143.2s rate=8.73/s
+  [done 1300/5000] sid=111848 obs_n=4 rep_shape=(37, 4, 2048) elapsed=148.7s rate=8.74/s
+  [done 1350/5000] sid=113440 obs_n=5 rep_shape=(37, 5, 2048) elapsed=154.8s rate=8.72/s
+  [done 1400/5000] sid=114981 obs_n=5 rep_shape=(37, 5, 2048) elapsed=161.0s rate=8.69/s
+  [done 1450/5000] sid=117395 obs_n=3 rep_shape=(37, 3, 2048) elapsed=166.5s rate=8.71/s
+  [done 1500/5000] sid=116651 obs_n=3 rep_shape=(37, 3, 2048) elapsed=172.0s rate=8.72/s
+  [done 1550/5000] sid=111450 obs_n=5 rep_shape=(37, 5, 2048) elapsed=177.6s rate=8.73/s
+  [done 1600/5000] sid=114798 obs_n=3 rep_shape=(37, 3, 2048) elapsed=183.6s rate=8.71/s
+  [done 1650/5000] sid=113131 obs_n=4 rep_shape=(37, 4, 2048) elapsed=189.7s rate=8.70/s
+  [done 1700/5000] sid=118074 obs_n=3 rep_shape=(37, 3, 2048) elapsed=195.6s rate=8.69/s
+  [done 1750/5000] sid=117501 obs_n=5 rep_shape=(37, 5, 2048) elapsed=201.1s rate=8.70/s
+  [done 1800/5000] sid=113649 obs_n=3 rep_shape=(37, 3, 2048) elapsed=206.6s rate=8.71/s
+  [done 1850/5000] sid=117527 obs_n=4 rep_shape=(37, 4, 2048) elapsed=212.5s rate=8.71/s
+  [done 1900/5000] sid=112069 obs_n=2 rep_shape=(37, 2, 2048) elapsed=218.0s rate=8.71/s
+  [done 1950/5000] sid=116805 obs_n=2 rep_shape=(37, 2, 2048) elapsed=224.4s rate=8.69/s
+  [done 2000/5000] sid=110952 obs_n=5 rep_shape=(37, 5, 2048) elapsed=229.7s rate=8.71/s
+  [done 2050/5000] sid=112727 obs_n=3 rep_shape=(37, 3, 2048) elapsed=235.7s rate=8.70/s
+  [done 2100/5000] sid=115751 obs_n=3 rep_shape=(37, 3, 2048) elapsed=241.1s rate=8.71/s
+  [done 2150/5000] sid=115068 obs_n=3 rep_shape=(37, 3, 2048) elapsed=246.3s rate=8.73/s
+  [done 2200/5000] sid=110678 obs_n=4 rep_shape=(37, 4, 2048) elapsed=253.2s rate=8.69/s
+  [done 2250/5000] sid=109504 obs_n=5 rep_shape=(37, 5, 2048) elapsed=259.1s rate=8.68/s
+  [done 2300/5000] sid=113879 obs_n=4 rep_shape=(37, 4, 2048) elapsed=265.0s rate=8.68/s
+  [done 2350/5000] sid=111479 obs_n=2 rep_shape=(37, 2, 2048) elapsed=270.2s rate=8.70/s
+  [done 2400/5000] sid=109167 obs_n=3 rep_shape=(37, 3, 2048) elapsed=275.6s rate=8.71/s
+  [done 2450/5000] sid=114259 obs_n=4 rep_shape=(37, 4, 2048) elapsed=281.1s rate=8.72/s
+  [done 2500/5000] sid=109086 obs_n=4 rep_shape=(37, 4, 2048) elapsed=286.2s rate=8.73/s
+  [done 2550/5000] sid=115363 obs_n=3 rep_shape=(37, 3, 2048) elapsed=291.6s rate=8.75/s
+  [done 2600/5000] sid=117739 obs_n=3 rep_shape=(37, 3, 2048) elapsed=297.5s rate=8.74/s
+  [done 2650/5000] sid=118119 obs_n=6 rep_shape=(37, 6, 2048) elapsed=303.2s rate=8.74/s
+  [done 2700/5000] sid=108788 obs_n=5 rep_shape=(37, 5, 2048) elapsed=309.7s rate=8.72/s
+  [done 2750/5000] sid=116764 obs_n=5 rep_shape=(37, 5, 2048) elapsed=315.2s rate=8.72/s
+  [done 2800/5000] sid=114963 obs_n=2 rep_shape=(37, 2, 2048) elapsed=320.8s rate=8.73/s
+  [done 2850/5000] sid=112029 obs_n=7 rep_shape=(37, 7, 2048) elapsed=327.0s rate=8.72/s
+  [done 2900/5000] sid=112558 obs_n=3 rep_shape=(37, 3, 2048) elapsed=332.5s rate=8.72/s
+  [done 2950/5000] sid=116201 obs_n=3 rep_shape=(37, 3, 2048) elapsed=338.0s rate=8.73/s
+  [done 3000/5000] sid=109961 obs_n=2 rep_shape=(37, 2, 2048) elapsed=344.1s rate=8.72/s
+  [done 3050/5000] sid=114054 obs_n=5 rep_shape=(37, 5, 2048) elapsed=349.6s rate=8.73/s
+  [done 3100/5000] sid=112889 obs_n=4 rep_shape=(37, 4, 2048) elapsed=355.8s rate=8.71/s
+  [done 3150/5000] sid=111610 obs_n=5 rep_shape=(37, 5, 2048) elapsed=361.4s rate=8.72/s
+  [done 3200/5000] sid=115986 obs_n=5 rep_shape=(37, 5, 2048) elapsed=367.0s rate=8.72/s
+  [done 3250/5000] sid=114128 obs_n=2 rep_shape=(37, 2, 2048) elapsed=372.7s rate=8.72/s
+  [done 3300/5000] sid=109660 obs_n=3 rep_shape=(37, 3, 2048) elapsed=378.2s rate=8.73/s
+  [done 3350/5000] sid=108615 obs_n=6 rep_shape=(37, 6, 2048) elapsed=383.5s rate=8.74/s
+  [done 3400/5000] sid=109359 obs_n=4 rep_shape=(37, 4, 2048) elapsed=389.0s rate=8.74/s
+  [done 3450/5000] sid=110649 obs_n=2 rep_shape=(37, 2, 2048) elapsed=394.4s rate=8.75/s
+  [done 3500/5000] sid=114572 obs_n=4 rep_shape=(37, 4, 2048) elapsed=400.0s rate=8.75/s
+  [done 3550/5000] sid=114907 obs_n=4 rep_shape=(37, 4, 2048) elapsed=406.4s rate=8.74/s
+  [done 3600/5000] sid=108844 obs_n=4 rep_shape=(37, 4, 2048) elapsed=411.6s rate=8.75/s
+  [done 3650/5000] sid=116893 obs_n=3 rep_shape=(37, 3, 2048) elapsed=416.8s rate=8.76/s
+  [done 3700/5000] sid=111023 obs_n=5 rep_shape=(37, 5, 2048) elapsed=422.5s rate=8.76/s
+  [done 3750/5000] sid=118394 obs_n=3 rep_shape=(37, 3, 2048) elapsed=428.6s rate=8.75/s
+  [done 3800/5000] sid=113249 obs_n=4 rep_shape=(37, 4, 2048) elapsed=434.4s rate=8.75/s
+  [done 3850/5000] sid=108753 obs_n=10 rep_shape=(37, 10, 2048) elapsed=440.1s rate=8.75/s
+  [done 3900/5000] sid=111209 obs_n=5 rep_shape=(37, 5, 2048) elapsed=445.5s rate=8.75/s
+  [done 3950/5000] sid=108892 obs_n=4 rep_shape=(37, 4, 2048) elapsed=451.2s rate=8.75/s
+  [done 4000/5000] sid=109480 obs_n=4 rep_shape=(37, 4, 2048) elapsed=456.7s rate=8.76/s
+  [done 4050/5000] sid=118039 obs_n=3 rep_shape=(37, 3, 2048) elapsed=462.3s rate=8.76/s
+  [done 4100/5000] sid=116794 obs_n=6 rep_shape=(37, 6, 2048) elapsed=467.8s rate=8.76/s
+  [done 4150/5000] sid=116010 obs_n=4 rep_shape=(37, 4, 2048) elapsed=473.6s rate=8.76/s
+  [done 4200/5000] sid=108879 obs_n=5 rep_shape=(37, 5, 2048) elapsed=479.1s rate=8.77/s
+  [done 4250/5000] sid=112467 obs_n=4 rep_shape=(37, 4, 2048) elapsed=485.2s rate=8.76/s
+  [done 4300/5000] sid=113513 obs_n=3 rep_shape=(37, 3, 2048) elapsed=491.3s rate=8.75/s
+  [done 4350/5000] sid=113633 obs_n=6 rep_shape=(37, 6, 2048) elapsed=496.7s rate=8.76/s
+  [done 4400/5000] sid=117073 obs_n=4 rep_shape=(37, 4, 2048) elapsed=502.6s rate=8.75/s
+  [done 4450/5000] sid=113878 obs_n=5 rep_shape=(37, 5, 2048) elapsed=507.9s rate=8.76/s
+  [done 4500/5000] sid=114814 obs_n=6 rep_shape=(37, 6, 2048) elapsed=514.0s rate=8.75/s
+  [done 4550/5000] sid=117048 obs_n=4 rep_shape=(37, 4, 2048) elapsed=519.2s rate=8.76/s
+  [done 4600/5000] sid=109682 obs_n=4 rep_shape=(37, 4, 2048) elapsed=524.9s rate=8.76/s
+  [done 4650/5000] sid=116678 obs_n=4 rep_shape=(37, 4, 2048) elapsed=530.5s rate=8.77/s
+  [done 4700/5000] sid=112978 obs_n=5 rep_shape=(37, 5, 2048) elapsed=536.3s rate=8.76/s
+  [done 4750/5000] sid=110475 obs_n=3 rep_shape=(37, 3, 2048) elapsed=541.7s rate=8.77/s
+  [done 4800/5000] sid=109310 obs_n=3 rep_shape=(37, 3, 2048) elapsed=546.5s rate=8.78/s
+  [done 4850/5000] sid=117319 obs_n=2 rep_shape=(37, 2, 2048) elapsed=552.0s rate=8.79/s
+  [done 4900/5000] sid=108970 obs_n=4 rep_shape=(37, 4, 2048) elapsed=558.2s rate=8.78/s
+  [done 4950/5000] sid=116126 obs_n=5 rep_shape=(37, 5, 2048) elapsed=564.2s rate=8.77/s
+  [done 5000/5000] sid=114314 obs_n=7 rep_shape=(37, 7, 2048) elapsed=569.5s rate=8.78/s
+[teacher-precompute] done: saved=5000 failed=0 elapsed=569.5s

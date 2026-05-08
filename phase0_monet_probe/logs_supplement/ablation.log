@@ -1,0 +1,99 @@
+🚨 `attention_mask_4d` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `attention_mask_4d` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_factor` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `loss_type` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `output_latent_embeds` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `compute_emphasize_acc` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+
+[ablate] loading Monet stage2 as reader…
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 130.40it/s]
+[ablate] reader=monet_self  stage=stage2  subset=Visual_CoT  n=100
+`loss_type=None` was set in the config but it is unrecognised.Using the default loss: `ForCausalLMLoss`.
+   [monet_self] 1/100  elapsed=1.0s
+   [monet_self] 10/100  elapsed=8.1s
+   [monet_self] 20/100  elapsed=16.1s
+   [monet_self] 30/100  elapsed=24.0s
+   [monet_self] 40/100  elapsed=32.1s
+   [monet_self] 50/100  elapsed=40.4s
+   [monet_self] 60/100  elapsed=48.8s
+   [monet_self] 70/100  elapsed=57.3s
+   [monet_self] 80/100  elapsed=65.8s
+   [monet_self] 90/100  elapsed=74.2s
+   [monet_self] 100/100  elapsed=82.5s
+[ablate] reader=monet_self  stage=stage2  subset=Zebra_CoT_count  n=100
+   [monet_self] 1/100  elapsed=1.3s
+   [monet_self] 10/100  elapsed=12.5s
+   [monet_self] 20/100  elapsed=25.0s
+   [monet_self] 30/100  elapsed=38.9s
+   [monet_self] 40/100  elapsed=52.3s
+   [monet_self] 50/100  elapsed=64.7s
+   [monet_self] 60/100  elapsed=73.7s
+   [monet_self] 70/100  elapsed=85.4s
+   [monet_self] 80/100  elapsed=97.1s
+   [monet_self] 90/100  elapsed=109.4s
+   [monet_self] 100/100  elapsed=120.4s
+
+[ablate] loading Monet stage3 as reader…
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 133.42it/s]
+[ablate] reader=monet_self  stage=stage3  subset=Visual_CoT  n=100
+   [monet_self] 1/100  elapsed=0.8s
+   [monet_self] 10/100  elapsed=7.9s
+   [monet_self] 20/100  elapsed=15.8s
+   [monet_self] 30/100  elapsed=23.8s
+   [monet_self] 40/100  elapsed=31.8s
+   [monet_self] 50/100  elapsed=40.1s
+   [monet_self] 60/100  elapsed=48.4s
+   [monet_self] 70/100  elapsed=56.8s
+   [monet_self] 80/100  elapsed=65.3s
+   [monet_self] 90/100  elapsed=73.7s
+   [monet_self] 100/100  elapsed=82.0s
+[ablate] reader=monet_self  stage=stage3  subset=Zebra_CoT_count  n=100
+   [monet_self] 1/100  elapsed=1.3s
+   [monet_self] 10/100  elapsed=12.4s
+   [monet_self] 20/100  elapsed=24.9s
+   [monet_self] 30/100  elapsed=38.8s
+   [monet_self] 40/100  elapsed=52.1s
+   [monet_self] 50/100  elapsed=64.6s
+   [monet_self] 60/100  elapsed=73.6s
+   [monet_self] 70/100  elapsed=82.4s
+   [monet_self] 80/100  elapsed=94.1s
+   [monet_self] 90/100  elapsed=106.3s
+   [monet_self] 100/100  elapsed=117.4s
+
+[ablate] loading Qwen base reader: Qwen/Qwen2.5-VL-7B-Instruct
+You have video processor config saved in `preprocessor.json` file which is deprecated. Video processor configs should be saved in their own `video_preprocessor.json` file. You can rename the file or load and save the processor back which renames it automatically. Loading from `preprocessor.json` will be removed in v5.0.
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 5/5 [00:00<00:00, 165.83it/s]
+[ablate] reader=qwen_base  stage=stage2  subset=Visual_CoT  n=100
+   [qwen_base] 1/100  elapsed=0.8s
+   [qwen_base] 10/100  elapsed=7.9s
+   [qwen_base] 20/100  elapsed=15.8s
+   [qwen_base] 30/100  elapsed=23.8s
+   [qwen_base] 40/100  elapsed=31.9s
+   [qwen_base] 50/100  elapsed=40.3s
+   [qwen_base] 60/100  elapsed=48.6s
+   [qwen_base] 70/100  elapsed=57.1s
+   [qwen_base] 80/100  elapsed=65.4s
+   [qwen_base] 90/100  elapsed=73.8s
+   [qwen_base] 100/100  elapsed=82.1s
+[ablate] reader=qwen_base  stage=stage2  subset=Zebra_CoT_count  n=100
+   [qwen_base] 1/100  elapsed=1.3s
+   [qwen_base] 10/100  elapsed=12.3s
+   [qwen_base] 20/100  elapsed=24.8s
+   [qwen_base] 30/100  elapsed=38.5s
+   [qwen_base] 40/100  elapsed=51.9s
+   [qwen_base] 50/100  elapsed=64.2s
+   [qwen_base] 60/100  elapsed=76.4s
+   [qwen_base] 70/100  elapsed=88.1s
+   [qwen_base] 80/100  elapsed=99.8s
+   [qwen_base] 90/100  elapsed=112.0s

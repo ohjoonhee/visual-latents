@@ -1,0 +1,66 @@
+{
+  "splits": {
+    "train": 50000,
+    "eval": 974
+  },
+  "examples": {
+    "train": {
+      "image": {
+        "_type": "PIL.Image",
+        "size": [
+          2654,
+          2285
+        ],
+        "mode": "L"
+      },
+      "image_id": "ztlg0227_2",
+      "source": "docvqa",
+      "question": "what is the auth. no. for frances ellen brock mentioned in the given page?",
+      "answer": "0966",
+      "bbox_pixel": [
+        1560,
+        330,
+        2106,
+        367
+      ],
+      "bbox_norm": [
+        0.5877920389175415,
+        0.14442013204097748,
+        0.7935191988945007,
+        0.16061268746852875
+      ],
+      "width": 2654,
+      "height": 2285,
+      "qa_idx_within_image": 3
+    },
+    "eval": {
+      "image": {
+        "_type": "PIL.Image",
+        "size": [
+          1788,
+          2282
+        ],
+        "mode": "L"
+      },
+      "image_id": "xhfg0227_21",
+      "source": "docvqa",
+      "question": "what is the number at bottom of the page?",
+      "answer": "-18-",
+      "bbox_pixel": [
+        873,
+        1956,
+        935,
+        1981
+      ],
+      "bbox_norm": [
+        0.48825502395629883,
+        0.8571428656578064,
+        0.5229306221008301,
+        0.8680981397628784
+      ],
+      "width": 1788,
+      "height": 2282,
+      "qa_idx_within_image": 0
+    }
+  }
+}

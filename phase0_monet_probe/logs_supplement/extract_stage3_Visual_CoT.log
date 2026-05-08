@@ -1,0 +1,46 @@
+🚨 `attention_mask_4d` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `attention_mask_4d` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_factor` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `loss_type` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `output_latent_embeds` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `compute_emphasize_acc` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+[student] stage=stage3 subset=Visual_CoT n=100
+[student] model=/mnt/ssd/Projects/visual-latents/phase0_monet_probe/checkpoints/Monet-SFT-7B/stage3
+[student] tokens: <abs_vis_token>=151666 </abs_vis_token>=151667 <abs_vis_token_pad>=151665
+[student] loading model (bf16, cuda)
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 126.38it/s]
+[student] Visual_CoT/train.json has 118561 rows
+[student] accepted=100  skipped=0
+  [done 1/100] sid=117359 latent=(8, 3584) elapsed=1.0s
+  [done 5/100] sid=118069 latent=(8, 3584) elapsed=3.7s
+  [done 10/100] sid=118520 latent=(8, 3584) elapsed=7.1s
+  [done 15/100] sid=117334 latent=(8, 3584) elapsed=9.0s
+  [done 20/100] sid=118022 latent=(8, 3584) elapsed=11.0s
+  [done 25/100] sid=116916 latent=(8, 3584) elapsed=12.7s
+  [done 30/100] sid=116661 latent=(8, 3584) elapsed=14.4s
+  [done 35/100] sid=118128 latent=(8, 3584) elapsed=16.1s
+  [done 40/100] sid=116906 latent=(8, 3584) elapsed=18.3s
+  [done 45/100] sid=117857 latent=(8, 3584) elapsed=22.5s
+  [done 50/100] sid=118456 latent=(8, 3584) elapsed=26.2s
+  [done 55/100] sid=116840 latent=(8, 3584) elapsed=29.9s
+  [done 60/100] sid=116986 latent=(8, 3584) elapsed=34.0s
+  [done 65/100] sid=116817 latent=(8, 3584) elapsed=37.8s
+  [done 70/100] sid=116815 latent=(8, 3584) elapsed=42.0s
+  [done 75/100] sid=118367 latent=(8, 3584) elapsed=45.6s
+  [done 80/100] sid=117419 latent=(8, 3584) elapsed=49.2s
+  [done 85/100] sid=116655 latent=(8, 3584) elapsed=52.9s
+  [done 90/100] sid=118313 latent=(8, 3584) elapsed=56.6s
+  [done 95/100] sid=117813 latent=(8, 3584) elapsed=60.3s
+  [done 100/100] sid=116686 latent=(8, 3584) elapsed=63.9s
+[student] done. saved=100  failed=0  elapsed=63.9s

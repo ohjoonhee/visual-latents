@@ -1,0 +1,39 @@
+# Phase 1 — re-test config: paper-faithful sum-over-D LVR loss.
+#
+# Mirrors lvr_3b_5k.yaml exactly EXCEPT:
+#   - loss_form: sum_d (was implicit mean_d)
+#   - out_dir: phase1_lvr/results_summse (was phase1_lvr/results)
+# Same data, same train/eval split, same seed → checkpoints directly comparable.
+
+base_model: Qwen/Qwen2.5-VL-3B-Instruct
+
+K: 8
+lambda_lvr: 1.0
+
+# Loss form (run-2 change): paper-faithful (1/T_v) · Σ ||h-v||^2 (sum over D, mean over K, mean over B)
+loss_form: sum_d
+
+# Optim / schedule
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 100
+max_steps: 1000
+grad_accum_steps: 4    # eff batch = 4 (bsz=1 × grad_accum=4)
+
+# Memory
+gradient_checkpointing: true
+
+# Image processor (Qwen2.5-VL min/max pixel cap to limit per-image cost)
+min_pixels: 3136          # 4 * 28 * 28
+max_pixels: 401408        # 512 * 784 ≈ 28*28*512 — equivalent to ~512 token slots
+
+# Data
+train_split: train
+n_train_examples: 5000
+
+# Logging
+out_dir: phase1_lvr/results_summse
+log_every: 10
+save_every: 500
+
+seed: 0

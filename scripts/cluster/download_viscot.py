@@ -1,8 +1,10 @@
 """Download Visual-CoT image shards from HuggingFace to bioai cluster storage.
 
-Per `/tmp/viscot_probe_report.md` (2026-05-03 probe), shards needed for the
-4-source mix (DocVQA + TextVQA + Flickr30k + OpenImages) are 0, 1, 4-11
-(10 of 13). Each shard ~10 GiB → ~107 GB total.
+The dataset's images live as a single tar archive split into 13 binary chunks
+of ~10 GiB each (cot_images_00..12). Pull ALL 13 shards (~140 GB) — selective
+shard skipping breaks the concatenated tar stream because the chunks are
+binary `split -b` cuts, not per-source archives. Per-source filtering happens
+later in `extract_viscot.sh` via `tar --wildcards`.
 
 Run on cluster CPU job (cpu-standard partition).
 
@@ -23,16 +25,13 @@ from huggingface_hub import hf_hub_download
 REPO_ID = "deepcs233/Visual-CoT"
 REPO_TYPE = "dataset"
 
-# 10 shards covering DocVQA + TextVQA + Flickr30k + OpenImages.
-# Skipped: shards 2, 3 (GQA — not in our mix), shard 12 (v7w/visual7w/vizwiz/vsr).
-# Note: in the HF repo the shards live under `cot_images_tar_split/` — verified
-# 2026-05-04 via `HfApi().list_repo_files`. Earlier probe missed the prefix.
+# All 13 shards. The cot_images_tar_split files are binary chunks of one tar
+# archive (`split -b 10G`); only shard 0 carries the tar header and only
+# shard 12 has the EOF padding. Selective skipping corrupts the concatenated
+# stream at extract time (Unexpected EOF mid-archive — observed jobid 212990,
+# May 4 2026). Pull all 13; filter by source folder later via tar --wildcards.
 SHARDS_NEEDED = [
-    "cot_images_tar_split/cot_images_00", "cot_images_tar_split/cot_images_01",
-    "cot_images_tar_split/cot_images_04", "cot_images_tar_split/cot_images_05",
-    "cot_images_tar_split/cot_images_06", "cot_images_tar_split/cot_images_07",
-    "cot_images_tar_split/cot_images_08", "cot_images_tar_split/cot_images_09",
-    "cot_images_tar_split/cot_images_10", "cot_images_tar_split/cot_images_11",
+    f"cot_images_tar_split/cot_images_{i:02d}" for i in range(13)
 ]
 
 # Annotations file (already pulled locally pre-cluster, but pull again here

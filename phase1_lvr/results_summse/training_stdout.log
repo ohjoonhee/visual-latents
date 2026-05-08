@@ -1,0 +1,115 @@
+[config] {'base_model': 'Qwen/Qwen2.5-VL-3B-Instruct', 'K': 8, 'lambda_lvr': 1.0, 'loss_form': 'sum_d', 'lr': 1e-05, 'weight_decay': 0.0, 'warmup_steps': 100, 'max_steps': 1000, 'grad_accum_steps': 4, 'gradient_checkpointing': True, 'min_pixels': 3136, 'max_pixels': 401408, 'train_split': 'train', 'n_train_examples': 5000, 'out_dir': 'phase1_lvr/results_summse', 'log_every': 10, 'save_every': 500, 'seed': 0}
+[load] Qwen/Qwen2.5-VL-3B-Instruct
+You have video processor config saved in `preprocessor.json` file which is deprecated. Video processor configs should be saved in their own `video_preprocessor.json` file. You can rename the file or load and save the processor back which renames it automatically. Loading from `preprocessor.json` will be removed in v5.0.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 62.42it/s]
+[freeze] trainable=3085.9M  frozen=668.7M
+[data] loading split=train n=5000
+[data] loaded 5000 examples
+[loss] form=sum_d
+/mnt/ssd/Projects/visual-latents/phase0_monet_probe/.venv-monet/lib/python3.10/site-packages/torch/utils/checkpoint.py:87: UserWarning: None of the inputs have requires_grad=True. Gradients will be None
+  warnings.warn(
+`loss_type=None` was set in the config but it is unrecognised.Using the default loss: `ForCausalLMLoss`.
+[step 1/1000] loss=40092.210 ntp=7.577 lvr=40084.633 ||h||=165.01 ||v||=101.07 mem=32.7GB elapsed=2s
+[step 10/1000] loss=36251.849 ntp=4.521 lvr=36247.328 ||h||=163.64 ||v||=88.11 mem=32.7GB elapsed=13s
+[step 20/1000] loss=34181.929 ntp=4.521 lvr=34177.407 ||h||=161.90 ||v||=79.64 mem=32.7GB elapsed=27s
+[step 30/1000] loss=32128.665 ntp=4.924 lvr=32123.741 ||h||=151.18 ||v||=86.81 mem=32.7GB elapsed=40s
+[step 40/1000] loss=24872.335 ntp=3.866 lvr=24868.469 ||h||=131.46 ||v||=77.25 mem=32.7GB elapsed=54s
+[step 50/1000] loss=20149.195 ntp=3.195 lvr=20146.000 ||h||=104.80 ||v||=83.94 mem=32.7GB elapsed=67s
+[step 60/1000] loss=14120.498 ntp=3.588 lvr=14116.910 ||h||=77.01 ||v||=80.17 mem=32.7GB elapsed=81s
+[step 70/1000] loss=12430.658 ntp=3.552 lvr=12427.106 ||h||=57.94 ||v||=85.62 mem=32.7GB elapsed=94s
+[step 80/1000] loss=11691.390 ntp=3.292 lvr=11688.098 ||h||=42.44 ||v||=88.97 mem=32.7GB elapsed=108s
+[step 90/1000] loss=10047.309 ntp=2.810 lvr=10044.499 ||h||=29.30 ||v||=88.59 mem=32.7GB elapsed=120s
+[step 100/1000] loss=10364.016 ntp=3.335 lvr=10360.681 ||h||=27.36 ||v||=92.49 mem=32.7GB elapsed=134s
+[step 110/1000] loss=8705.310 ntp=3.611 lvr=8701.698 ||h||=28.16 ||v||=83.11 mem=32.7GB elapsed=148s
+[step 120/1000] loss=9648.281 ntp=3.922 lvr=9644.359 ||h||=29.38 ||v||=89.85 mem=32.7GB elapsed=161s
+[step 130/1000] loss=9112.243 ntp=2.768 lvr=9109.475 ||h||=33.80 ||v||=87.92 mem=32.7GB elapsed=174s
+[step 140/1000] loss=9889.968 ntp=3.109 lvr=9886.859 ||h||=33.99 ||v||=93.47 mem=32.7GB elapsed=187s
+[step 150/1000] loss=8036.522 ntp=3.301 lvr=8033.221 ||h||=33.25 ||v||=84.33 mem=32.7GB elapsed=201s
+[step 160/1000] loss=8182.037 ntp=3.619 lvr=8178.418 ||h||=34.44 ||v||=85.08 mem=32.7GB elapsed=214s
+[step 170/1000] loss=8271.736 ntp=3.120 lvr=8268.616 ||h||=35.53 ||v||=84.07 mem=32.7GB elapsed=227s
+[step 180/1000] loss=7465.336 ntp=3.865 lvr=7461.472 ||h||=32.64 ||v||=79.83 mem=32.7GB elapsed=241s
+[step 190/1000] loss=8390.848 ntp=2.545 lvr=8388.303 ||h||=38.51 ||v||=88.90 mem=32.7GB elapsed=253s
+[step 200/1000] loss=6934.475 ntp=3.174 lvr=6931.301 ||h||=32.55 ||v||=77.48 mem=32.7GB elapsed=267s
+[step 210/1000] loss=9274.511 ntp=3.761 lvr=9270.750 ||h||=41.97 ||v||=94.31 mem=32.7GB elapsed=280s
+[step 220/1000] loss=8205.033 ntp=2.903 lvr=8202.130 ||h||=37.18 ||v||=85.83 mem=32.7GB elapsed=294s
+[step 230/1000] loss=8123.986 ntp=3.216 lvr=8120.770 ||h||=39.55 ||v||=86.88 mem=32.7GB elapsed=307s
+[step 240/1000] loss=9014.546 ntp=3.044 lvr=9011.502 ||h||=39.96 ||v||=92.53 mem=32.7GB elapsed=320s
+[step 250/1000] loss=7583.703 ntp=3.239 lvr=7580.464 ||h||=37.10 ||v||=83.43 mem=32.7GB elapsed=333s
+[step 260/1000] loss=7318.721 ntp=3.442 lvr=7315.279 ||h||=40.17 ||v||=82.95 mem=32.7GB elapsed=347s
+[step 270/1000] loss=9105.877 ntp=4.369 lvr=9101.508 ||h||=35.27 ||v||=93.09 mem=32.7GB elapsed=361s
+[step 280/1000] loss=7383.530 ntp=3.747 lvr=7379.783 ||h||=40.23 ||v||=81.68 mem=32.7GB elapsed=374s
+[step 290/1000] loss=7497.184 ntp=3.729 lvr=7493.455 ||h||=38.80 ||v||=83.92 mem=32.7GB elapsed=388s
+[step 300/1000] loss=8086.228 ntp=3.820 lvr=8082.409 ||h||=42.51 ||v||=89.03 mem=32.7GB elapsed=401s
+[step 310/1000] loss=8530.954 ntp=3.551 lvr=8527.403 ||h||=43.53 ||v||=90.11 mem=32.7GB elapsed=414s
+[step 320/1000] loss=9387.402 ntp=3.110 lvr=9384.292 ||h||=45.75 ||v||=98.43 mem=32.7GB elapsed=427s
+[step 330/1000] loss=8636.205 ntp=3.396 lvr=8632.809 ||h||=44.67 ||v||=92.31 mem=32.7GB elapsed=440s
+[step 340/1000] loss=7710.980 ntp=2.740 lvr=7708.240 ||h||=39.97 ||v||=87.18 mem=32.7GB elapsed=454s
+[step 350/1000] loss=6828.015 ntp=3.230 lvr=6824.784 ||h||=44.62 ||v||=79.83 mem=32.7GB elapsed=467s
+[step 360/1000] loss=7358.613 ntp=3.255 lvr=7355.358 ||h||=29.90 ||v||=83.02 mem=32.7GB elapsed=480s
+[step 370/1000] loss=9260.243 ntp=3.422 lvr=9256.821 ||h||=47.91 ||v||=96.07 mem=32.7GB elapsed=493s
+[step 380/1000] loss=7597.533 ntp=3.533 lvr=7594.000 ||h||=40.86 ||v||=86.37 mem=32.7GB elapsed=507s
+[step 390/1000] loss=6378.757 ntp=3.174 lvr=6375.583 ||h||=36.47 ||v||=78.16 mem=32.7GB elapsed=521s
+[step 400/1000] loss=7342.270 ntp=3.226 lvr=7339.044 ||h||=41.06 ||v||=84.29 mem=32.7GB elapsed=534s
+[step 410/1000] loss=7567.827 ntp=3.318 lvr=7564.509 ||h||=41.26 ||v||=83.78 mem=32.7GB elapsed=547s
+[step 420/1000] loss=7316.370 ntp=3.639 lvr=7312.731 ||h||=41.08 ||v||=84.55 mem=32.7GB elapsed=561s
+[step 430/1000] loss=7629.479 ntp=3.916 lvr=7625.563 ||h||=40.72 ||v||=87.48 mem=32.7GB elapsed=575s
+[step 440/1000] loss=8146.462 ntp=3.814 lvr=8142.648 ||h||=43.42 ||v||=89.87 mem=32.7GB elapsed=588s
+[step 450/1000] loss=8961.802 ntp=3.628 lvr=8958.174 ||h||=48.20 ||v||=97.62 mem=32.7GB elapsed=601s
+[step 460/1000] loss=6781.152 ntp=2.952 lvr=6778.200 ||h||=40.74 ||v||=78.57 mem=32.7GB elapsed=615s
+[step 470/1000] loss=6119.472 ntp=3.251 lvr=6116.222 ||h||=33.08 ||v||=75.80 mem=32.7GB elapsed=629s
+[step 480/1000] loss=9017.223 ntp=3.425 lvr=9013.797 ||h||=50.03 ||v||=97.72 mem=32.7GB elapsed=641s
+[step 490/1000] loss=7950.033 ntp=3.420 lvr=7946.612 ||h||=43.63 ||v||=89.49 mem=32.7GB elapsed=654s
+[step 500/1000] loss=7744.209 ntp=4.150 lvr=7740.058 ||h||=43.40 ||v||=89.01 mem=32.7GB elapsed=668s
+[ckpt] saved phase1_lvr/results_summse/checkpoint_step500
+[step 510/1000] loss=7590.162 ntp=3.271 lvr=7586.891 ||h||=45.36 ||v||=88.36 mem=32.7GB elapsed=687s
+[step 520/1000] loss=6880.115 ntp=3.456 lvr=6876.659 ||h||=39.65 ||v||=80.37 mem=32.7GB elapsed=700s
+[step 530/1000] loss=6234.886 ntp=2.775 lvr=6232.111 ||h||=36.98 ||v||=77.65 mem=32.7GB elapsed=714s
+[step 540/1000] loss=6670.699 ntp=3.571 lvr=6667.129 ||h||=40.80 ||v||=80.05 mem=32.7GB elapsed=728s
+[step 550/1000] loss=7036.033 ntp=3.979 lvr=7032.054 ||h||=41.76 ||v||=83.06 mem=32.7GB elapsed=741s
+[step 560/1000] loss=5935.721 ntp=3.741 lvr=5931.979 ||h||=35.58 ||v||=75.82 mem=32.7GB elapsed=755s
+[step 570/1000] loss=7910.186 ntp=3.373 lvr=7906.813 ||h||=45.21 ||v||=90.31 mem=32.7GB elapsed=768s
+[step 580/1000] loss=8029.025 ntp=3.303 lvr=8025.722 ||h||=45.07 ||v||=91.22 mem=32.7GB elapsed=780s
+[step 590/1000] loss=7283.641 ntp=3.550 lvr=7280.090 ||h||=45.13 ||v||=85.64 mem=32.7GB elapsed=794s
+[step 600/1000] loss=7279.555 ntp=3.281 lvr=7276.274 ||h||=43.50 ||v||=85.41 mem=32.7GB elapsed=807s
+[step 610/1000] loss=8267.651 ntp=3.383 lvr=8264.269 ||h||=42.99 ||v||=90.69 mem=32.7GB elapsed=820s
+[step 620/1000] loss=8708.365 ntp=3.511 lvr=8704.854 ||h||=43.46 ||v||=93.37 mem=32.7GB elapsed=833s
+[step 630/1000] loss=8608.264 ntp=3.275 lvr=8604.988 ||h||=49.93 ||v||=94.81 mem=32.7GB elapsed=847s
+[step 640/1000] loss=6783.379 ntp=3.323 lvr=6780.057 ||h||=42.06 ||v||=80.39 mem=32.7GB elapsed=860s
+[step 650/1000] loss=7030.383 ntp=3.209 lvr=7027.174 ||h||=41.59 ||v||=82.40 mem=32.7GB elapsed=874s
+[step 660/1000] loss=9789.810 ntp=3.092 lvr=9786.717 ||h||=46.09 ||v||=101.32 mem=32.7GB elapsed=886s
+[step 670/1000] loss=6669.748 ntp=3.035 lvr=6666.712 ||h||=44.34 ||v||=80.70 mem=32.7GB elapsed=899s
+[step 680/1000] loss=6231.746 ntp=3.253 lvr=6228.493 ||h||=37.37 ||v||=78.86 mem=32.7GB elapsed=913s
+[step 690/1000] loss=8161.744 ntp=4.150 lvr=8157.593 ||h||=42.41 ||v||=91.05 mem=32.7GB elapsed=927s
+[step 700/1000] loss=6814.793 ntp=3.122 lvr=6811.671 ||h||=38.77 ||v||=80.99 mem=32.7GB elapsed=941s
+[step 710/1000] loss=6926.880 ntp=3.353 lvr=6923.527 ||h||=45.56 ||v||=82.19 mem=32.7GB elapsed=954s
+[step 720/1000] loss=8217.758 ntp=3.479 lvr=8214.279 ||h||=43.60 ||v||=91.18 mem=32.7GB elapsed=968s
+[step 730/1000] loss=7682.460 ntp=3.428 lvr=7679.032 ||h||=45.87 ||v||=89.56 mem=32.7GB elapsed=981s
+[step 740/1000] loss=8310.202 ntp=3.145 lvr=8307.057 ||h||=45.73 ||v||=93.89 mem=32.7GB elapsed=994s
+[step 750/1000] loss=7379.113 ntp=3.271 lvr=7375.843 ||h||=43.07 ||v||=84.85 mem=32.7GB elapsed=1007s
+[step 760/1000] loss=8940.086 ntp=3.174 lvr=8936.912 ||h||=50.79 ||v||=96.67 mem=32.7GB elapsed=1020s
+[step 770/1000] loss=7633.966 ntp=3.673 lvr=7630.293 ||h||=47.78 ||v||=87.36 mem=32.7GB elapsed=1033s
+[step 780/1000] loss=6817.487 ntp=3.164 lvr=6814.323 ||h||=40.11 ||v||=81.31 mem=32.7GB elapsed=1047s
+[step 790/1000] loss=7952.373 ntp=3.756 lvr=7948.617 ||h||=46.00 ||v||=90.45 mem=32.7GB elapsed=1060s
+[step 800/1000] loss=7998.733 ntp=3.140 lvr=7995.593 ||h||=44.49 ||v||=90.77 mem=32.7GB elapsed=1073s
+[step 810/1000] loss=8233.984 ntp=4.080 lvr=8229.904 ||h||=48.11 ||v||=92.17 mem=32.7GB elapsed=1086s
+[step 820/1000] loss=7410.958 ntp=2.648 lvr=7408.311 ||h||=41.21 ||v||=83.61 mem=32.7GB elapsed=1099s
+[step 830/1000] loss=7695.296 ntp=3.399 lvr=7691.897 ||h||=44.25 ||v||=88.56 mem=32.7GB elapsed=1113s
+[step 840/1000] loss=7743.476 ntp=2.940 lvr=7740.536 ||h||=42.91 ||v||=88.00 mem=32.7GB elapsed=1126s
+[step 850/1000] loss=7816.398 ntp=3.393 lvr=7813.004 ||h||=41.85 ||v||=87.27 mem=32.7GB elapsed=1139s
+[step 860/1000] loss=6849.393 ntp=3.577 lvr=6845.816 ||h||=40.53 ||v||=82.26 mem=32.7GB elapsed=1152s
+[step 870/1000] loss=8409.006 ntp=3.526 lvr=8405.480 ||h||=43.92 ||v||=92.17 mem=32.7GB elapsed=1166s
+[step 880/1000] loss=8487.024 ntp=3.278 lvr=8483.746 ||h||=48.18 ||v||=93.54 mem=32.7GB elapsed=1179s
+[step 890/1000] loss=7473.489 ntp=3.447 lvr=7470.042 ||h||=45.28 ||v||=86.70 mem=32.7GB elapsed=1192s
+[step 900/1000] loss=7183.762 ntp=3.272 lvr=7180.490 ||h||=39.79 ||v||=83.09 mem=32.7GB elapsed=1206s
+[step 910/1000] loss=7210.593 ntp=3.008 lvr=7207.585 ||h||=42.82 ||v||=86.77 mem=32.7GB elapsed=1219s
+[step 920/1000] loss=6313.154 ntp=2.896 lvr=6310.258 ||h||=42.92 ||v||=78.52 mem=32.7GB elapsed=1232s
+[step 930/1000] loss=8254.071 ntp=3.542 lvr=8250.529 ||h||=46.16 ||v||=91.40 mem=32.7GB elapsed=1246s
+[step 940/1000] loss=7708.423 ntp=3.094 lvr=7705.328 ||h||=45.14 ||v||=88.62 mem=32.7GB elapsed=1259s
+[step 950/1000] loss=9508.972 ntp=3.164 lvr=9505.808 ||h||=50.73 ||v||=100.62 mem=32.7GB elapsed=1271s
+[step 960/1000] loss=6505.035 ntp=2.947 lvr=6502.088 ||h||=41.15 ||v||=78.68 mem=32.7GB elapsed=1285s
+[step 970/1000] loss=6587.843 ntp=3.451 lvr=6584.391 ||h||=38.88 ||v||=77.57 mem=32.7GB elapsed=1299s
+[step 980/1000] loss=6627.210 ntp=3.789 lvr=6623.421 ||h||=40.54 ||v||=79.12 mem=32.7GB elapsed=1312s
+[step 990/1000] loss=6516.757 ntp=3.254 lvr=6513.503 ||h||=40.52 ||v||=80.50 mem=32.7GB elapsed=1326s
+[step 1000/1000] loss=8891.324 ntp=3.219 lvr=8888.105 ||h||=51.04 ||v||=95.88 mem=32.7GB elapsed=1339s
+[ckpt] saved phase1_lvr/results_summse/checkpoint_step1000
+[done] saved final checkpoint to phase1_lvr/results_summse/checkpoint

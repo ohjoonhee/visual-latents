@@ -127,6 +127,22 @@ All `bash -n slurm/*.sbatch` syntax checks PASS. All 9 YAML configs load cleanly
 - Every `sb`/`sbatch` command requires explicit user approval.
 - No `--dependency` chains. No auto-resubmit on failure.
 
+## Diagnostics
+
+`results/<run>/ablation_eval.jsonl` rows now carry the Phase-0 pairwise-cosine
+diagnostic (mirroring `phase0_monet_probe/h_stats.jsonl`) alongside the existing
+per-mode NLL fields. New (additive) fields per row:
+`h_norms_per_pos` (`[K]`), `pairwise_cosine` (`[K, K]`, symmetric, diag = 1.0),
+and the scalar `mean_off_diag_cos` (mean over the `K*(K-1)/2` unique pairs).
+**Reading thresholds** (anchored to Phase 0 — see
+`phase0_monet_probe/REPORT.md`): `mean_off_diag_cos > 0.85` indicates uniform
+redundancy collapse — the latent positions encode duplicated information and
+the existing `compression_ratio` metric is blind to this mode (Monet stage 3:
+0.85–0.87, near-zero utility). `mean_off_diag_cos < 0.4` indicates distributed
+encoding with distinct per-position content (Monet stage 2: ~0.38, utility
++2.7 nat). Existing JSONL fields and the `_h_stats` row layout are unchanged
+for backward compatibility with prior runs and `scripts/analyse_overnight.py`.
+
 ## Files changed in this run
 
 - New: `configs/mini.yaml`, `docs/HANDOFF_OVERNIGHT.md` (this doc).

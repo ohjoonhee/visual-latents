@@ -1,0 +1,18 @@
+# Smoke config — 10 effective steps on 4 examples (forced by --smoke flag)
+base_model: Qwen/Qwen2.5-VL-3B-Instruct
+K: 8
+lambda_lvr: 1.0
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 5
+max_steps: 10
+grad_accum_steps: 1
+gradient_checkpointing: true
+min_pixels: 3136
+max_pixels: 200704        # ~256-token budget for smoke speed
+train_split: train
+n_train_examples: 8       # we'll cycle through these
+out_dir: phase1_lvr/results/smoke
+log_every: 1
+save_every: 0
+seed: 0
