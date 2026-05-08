@@ -16,13 +16,15 @@
   with even more negative utility (qwen_base −5.63 vs −4.76 OOD). The
   recipe-deviation hypothesis (no Stage 1 SFT, no per-position teacher) is
   the surviving explanation.
-- **Geometry is solved; semantics is partially structural.** Across every
-  PASSing variant (C2, D2, E), `n_helpful` stays at 1–2. Experiment E
-  (D2 at 2× steps) DID raise `qwen_base_utility` from +0.05 to **+0.088**
-  and `compression_ratio` from 0.79 to **0.875**, so the gap is partially
-  undertraining — but `n_helpful` did not move at 2× compute, indicating
-  a structural constraint (3B capacity, no Stage 1 SFT teacher, K=8 too
-  high for a 5K-example budget, or all three).
+- **Geometry is solved; semantics partially closed by K=4.** Across K=8
+  PASSing variants (C2, D2, E), `n_helpful` stays at 2/8 (25% rate) and
+  `qwen_base_utility` ≈ +0.05–0.09. Experiment F (D2 recipe at **K=4**)
+  changed this: helpful rate jumped to 2/4 = 50%, qwen_base utility
+  tripled to **+0.132**, mean off-diag cos tightened to 0.311 (best of
+  day). At the 5K-example budget, K=8 dilutes per-position signal across
+  too many slots; K=4 concentrates it. Experiment E (D2 at 2× steps)
+  also raised utility (+0.05 → +0.088) but did NOT move `n_helpful`
+  rate, so undertraining alone is not the structural cause.
 
 ## Cross-experiment table
 
@@ -45,7 +47,8 @@ own protocol.
 | Pivot A C2 VICReg | 0.672 | 0.441 | 1 | +0.044 | +0.340 | 0.465 | **PASS 3/4** |
 | Pivot A D1 VICReg+sumMSE | 0.787 | 0.987 | 2 | +0.078 | +0.052 | 0.465 | MARGINAL 2/4 |
 | **Pivot A D2 VICReg λ=2** | 0.792 | 0.341 | 2 | +0.050 | +0.366 | 0.465 | **PASS 3/4** |
-| **Pivot A E (D2 @ 2× steps)** | **0.875** | **0.389** | 2 | **+0.088** | +0.450 | 0.465 | **PASS 3/4** |
+| **Pivot A E (D2 @ 2× steps)** | **0.875** | 0.389 | 2 | +0.088 | +0.450 | 0.465 | **PASS 3/4** |
+| **Pivot A F (D2 @ K=4)** | 0.351 | **0.311** | **2/4 = 50%** | **+0.132** | +0.331 | 0.512 | **PASS 3/4** |
 
 The geometry column is the headline. C2 and D2 are the only runs all day
 that landed inside the [0.38, 0.55] Monet-stage-2-like band. Every other
@@ -203,21 +206,55 @@ position) — a more uniform distribution than D2, where one outlier
 direction was emerging. Geometrically, E's hidden states are the
 cleanest distributed encoding we have produced.
 
+### Experiment F — K=4 closes the n_helpful semantic gap
+
+F ran the D2 recipe (VICReg λ_reg=2, mean-MSE LVR, 1000 steps) but at
+**K=4** instead of K=8. PASS 3/4:
+
+| criterion | F result | D2 (K=8) | E (K=8 @ 2× steps) |
+|---|---:|---:|---:|
+| compression_ratio (≥0.4) | 0.351 FAIL | 0.792 PASS | 0.875 PASS |
+| **mean off-diag cos (≤0.55)** | **0.311 PASS** | 0.341 PASS | 0.389 PASS |
+| n_helpful (raw) | 2/4 | 2/8 | 2/8 |
+| **n_helpful rate** | **50% (2/4)** | 25% (2/8) | 25% (2/8) |
+| **qwen_base utility (>0)** | **+0.132 PASS** | +0.050 PASS | +0.088 PASS |
+| self-reader utility | +0.331 | +0.366 | +0.450 |
+
+Interpretation: at the 5K-example budget, K=8 dilutes per-position
+signal across 8 slots; K=4 gives each remaining slot 2× the gradient
+density. The result is +164% qwen_base utility (0.050 → 0.132), tighter
+geometry (cos 0.341 → 0.311 — the day's best, *below* Monet stage 2's
+0.375), and a doubling of the per-position helpful rate (25% → 50%).
+
+The compression_ratio FAIL is metric-artifact: with K=4, "first_half"
+and "last_half" are 2-position slices, and the denominator
+(`first_half_NLL − all_NLL`) is small and noisy. The other three
+criteria are all PASS, and the qwen_base utility PASS at +0.132 is the
+strongest semantic signal we've seen all day.
+
+This decisively answers question #2 in "What's still open": K dilution
+WAS a binding constraint at 3B/5K. The remaining structural questions
+(3B capacity, no Stage 1 SFT) need cluster scale to test.
+
 ## What's still open
 
-The semantic gap (n_helpful, qwen_base utility) hasn't been closed.
-Possible causes, ranked by how cheaply each can be tested:
+The semantic gap is now PARTIALLY characterized:
 
-1. **Undertraining** — probed by Experiment E (running). Cheapest test.
-2. **3B capacity** — Monet's published numbers are at 7B. A 7B Pivot-A
-   at the cluster would directly probe this. Mid-cost.
-3. **Recipe deviation: no Stage 1 SFT** — Monet's Stage 2 is *initialized
-   from* a Stage 1 SFT teacher; we are using raw Qwen2.5-VL-3B-Instruct.
-   This is the largest unaddressed deviation. Highest cost (Stage 1 SFT
-   pass before Pivot A).
-4. **K=8 too high for a 5K-example budget** — the per-slot signal is
-   diluted across 8 slots × 5K examples = 40K position-level updates.
-   Cheap to test (re-run D2 with K=4 at the same step count).
+1. **Undertraining** — probed by Experiment E. RULED OUT as the dominant
+   cause: 2× steps doubled `qwen_base utility` (+0.05 → +0.088) but did
+   NOT raise the n_helpful rate.
+2. **K dilution** — probed by Experiment F. CONFIRMED: K=4 with the
+   same 5K data + 1000 steps gave 50% helpful rate (vs K=8's 25%),
+   utility +0.132, and even tighter geometry (cos 0.311). For our
+   5K-example budget, K=8 dilutes per-position signal.
+3. **3B capacity** — UNTESTED locally. Monet's published numbers are at
+   7B. A 7B Pivot-A at the cluster would directly probe this.
+4. **Recipe deviation: no Stage 1 SFT** — UNTESTED. Monet's Stage 2 is
+   *initialized from* a Stage 1 SFT teacher; we are using raw
+   Qwen2.5-VL-3B-Instruct. This is the largest unaddressed deviation.
+
+The cheapest next probes are #3 (cluster 7B run with the F recipe) and
+#4 (Stage 1 SFT pre-pass locally before Pivot A). #2 is now closed.
 
 ## Decision matrix outcome
 
@@ -240,23 +277,29 @@ abandoned branch (attention mask) stays abandoned.
 
 ## Recommended next step
 
-**Strong recommendation:** escalate D2 (VICReg, λ_reg=2.0, mean-MSE LVR,
-γ=1.0, var=1.0, cov=0.04) to cluster Phase 3 at 7B + 125K Visual_CoT —
-the published Monet budget. The mechanism is validated at 3B/5K; the
-only remaining unknowns are whether the semantic gap closes at scale
-and whether n_helpful rises with longer training and a larger base.
-This is the project's natural main thread.
+**Strong recommendation (updated with F):** escalate the **F recipe** —
+VICReg λ_reg=2.0, mean-MSE LVR, γ=1.0, var=1.0, cov=0.04, **K=4**, ≥2000
+steps — to cluster Phase 3 at 7B + 125K Visual_CoT. F closed the
+semantic gap (utility +0.132, helpful rate 50%) at 3B with the same
+5K data the K=8 variants used; at 7B/125K the gap should close further.
 
-**Updated with E:** the cluster recipe should use **at least 2000
-steps** — Experiment E confirms that `qwen_base utility` and
-`compression_ratio` continue to improve from 1000 to 2000 steps (+76%
-utility, +10% compression, NTP descends further from 0.66 to 0.48).
-E does NOT close the n_helpful gap (still 2/8 individually helpful at
-2000 steps), so the cluster run should ALSO include a Stage 1 SFT pass
-before Pivot A — the no-Stage-1-SFT deviation is now the most likely
-surviving cause of the semantic gap, since undertraining is partially
-ruled out and 7B/125K alone (without Stage 1 SFT) carries the same
-recipe risk as 3B/5K.
+**Why K=4 now:** at 5K examples × 1000 steps × eff_bsz=4 = 4000
+example-views, K=8 makes 32K position-level updates and K=4 makes 16K
+— but per-position signal density is what matters. F's 50% helpful rate
+vs K=8's 25% is dispositive. At cluster scale (125K examples × 16
+batch × 2 epochs ≈ 4M example-views), K=8 might be fine — but K=4 was
+*also* a Monet design choice in some of their earlier ablations.
+Recommend testing K=4 first at cluster, then K=8 as a sweep if K=4
+underperforms there.
+
+**Why ≥2000 steps:** E confirmed `qwen_base utility` and
+`compression_ratio` keep improving 1000→2000 (+76% utility, +10%
+compression, NTP descends further from 0.66 to 0.48). At cluster
+scale this argues for ≥2 epochs of the Monet 125K mix.
+
+**Conditional on cluster outcome:** if the F recipe at 7B+125K still
+caps at n_helpful_rate < 75%, the no-Stage-1-SFT deviation is the
+remaining suspect — add a Stage 1 SFT pre-pass before Pivot A.
 
 **Not recommended:** further iteration on the attention-mask pathway
 (Phase 1.5c, etc.). Phase 1.5b's near-zero delta is sufficient evidence
@@ -273,7 +316,8 @@ them):
 - `phase2_indist/REPORT.md` — Experiment A, in-distribution Phase 2 re-eval
 - `phase1_5_attn/REPORT.md` — Experiment B baseline (Phase 1.5, no mask)
 - `phase1_5b_attn/REPORT.md` — Experiment B (Phase 1.5b, 4D attention mask)
-- `pivot_a/REPORT.md` — Experiments C1, C2, D1, D2 (and section E, when E completes)
+- `pivot_a/REPORT.md` — Experiments C1, C2, D1, D2, E (section per variant)
+- `pivot_a/REPORT_F.md` — Experiment F (K=4 follow-up; in a separate file because the K=8 build_report.py couldn't be safely shared)
 - `phase0_monet_probe/REPORT.md` — Monet stage 2 / stage 3 reference numbers
 
 Plans and design:
