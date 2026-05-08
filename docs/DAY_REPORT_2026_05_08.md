@@ -16,15 +16,15 @@
   with even more negative utility (qwen_base −5.63 vs −4.76 OOD). The
   recipe-deviation hypothesis (no Stage 1 SFT, no per-position teacher) is
   the surviving explanation.
-- **Geometry is solved; semantics partially closed by K=4.** Across K=8
-  PASSing variants (C2, D2, E), `n_helpful` stays at 2/8 (25% rate) and
-  `qwen_base_utility` ≈ +0.05–0.09. Experiment F (D2 recipe at **K=4**)
-  changed this: helpful rate jumped to 2/4 = 50%, qwen_base utility
-  tripled to **+0.132**, mean off-diag cos tightened to 0.311 (best of
-  day). At the 5K-example budget, K=8 dilutes per-position signal across
-  too many slots; K=4 concentrates it. Experiment E (D2 at 2× steps)
-  also raised utility (+0.05 → +0.088) but did NOT move `n_helpful`
-  rate, so undertraining alone is not the structural cause.
+- **Geometry is solved; semantics partially closed by K=4 + longer training.**
+  Across K=8 PASSing variants (C2, D2, E), `n_helpful` stays at 2/8
+  (25% rate) and `qwen_base_utility` ≈ +0.05–0.09. Experiment F (K=4 @
+  1k steps) jumped to 50% helpful rate and **+0.132** utility.
+  Experiment **G** stacked F's K=4 with E's 2× steps and pushed
+  qwen_base utility to **+0.222** (4.4× D2's +0.050) — single-position
+  margins as high as +0.199 nat. The remaining gap to Monet stage 2's
+  +2.19 nat is now ~10× and likely driven by the 3B vs 7B capacity gap
+  and the missing Stage 1 SFT teacher (cluster-only tests).
 
 ## Cross-experiment table
 
@@ -48,7 +48,8 @@ own protocol.
 | Pivot A D1 VICReg+sumMSE | 0.787 | 0.987 | 2 | +0.078 | +0.052 | 0.465 | MARGINAL 2/4 |
 | **Pivot A D2 VICReg λ=2** | 0.792 | 0.341 | 2 | +0.050 | +0.366 | 0.465 | **PASS 3/4** |
 | **Pivot A E (D2 @ 2× steps)** | **0.875** | 0.389 | 2 | +0.088 | +0.450 | 0.465 | **PASS 3/4** |
-| **Pivot A F (D2 @ K=4)** | 0.351 | **0.311** | **2/4 = 50%** | **+0.132** | +0.331 | 0.512 | **PASS 3/4** |
+| **Pivot A F (D2 @ K=4)** | 0.351 | **0.311** | 2/4 = 50% | +0.132 | +0.331 | 0.512 | **PASS 3/4** |
+| **Pivot A G (F @ 2× steps)** | 0.372 | 0.372 | **2/4 = 50%** | **+0.222** | **+0.426** | 0.512 | **PASS 3/4** |
 
 The geometry column is the headline. C2 and D2 are the only runs all day
 that landed inside the [0.38, 0.55] Monet-stage-2-like band. Every other
@@ -236,6 +237,39 @@ This decisively answers question #2 in "What's still open": K dilution
 WAS a binding constraint at 3B/5K. The remaining structural questions
 (3B capacity, no Stage 1 SFT) need cluster scale to test.
 
+### Experiment G — F + E stacked (K=4 + 2× steps)
+
+G ran the F recipe (VICReg λ_reg=2, mean-MSE LVR, K=4) at 2000 steps
+(warmup 200) — combining F's K-dilution fix with E's longer-training
+probe. PASS 3/4:
+
+| criterion | G result | F (K=4 @ 1k) | E (K=8 @ 2k) | D2 (K=8 @ 1k) |
+|---|---:|---:|---:|---:|
+| compression_ratio (≥0.4) | 0.372 FAIL | 0.351 FAIL | 0.875 PASS | 0.792 PASS |
+| **mean off-diag cos (≤0.55)** | 0.372 PASS | **0.311** PASS | 0.389 PASS | 0.341 PASS |
+| n_helpful rate | **50% (2/4)** | 50% (2/4) | 25% (2/8) | 25% (2/8) |
+| **qwen_base utility (>0)** | **+0.222** PASS | +0.132 PASS | +0.088 PASS | +0.050 PASS |
+| self-reader utility | **+0.426** | +0.331 | +0.450 | +0.366 |
+| ntp final | 0.516 | 0.685 | 0.480 | 0.660 |
+
+The headline is **+0.222 nat qwen_base utility**: 4.4× D2's starting
+point and 1.7× F. The per-position keep curve shows position 3 alone
+delivers +0.199 nat margin (largest single-position margin all day) and
+position 2 delivers +0.081; positions 0–1 are at +0.023–0.028 (still
+below the 0.05-nat helpful threshold but close).
+
+So 2× training on K=4 amplified the *existing* helpful positions
+rather than recruiting new ones. The n_helpful_rate stays at 50% but
+each helpful position carries more information. Self-reader utility
++0.426 is also the day's best.
+
+mean cos relaxed slightly (0.311 → 0.372) toward Monet stage 2's
+0.375 — VICReg is finding its natural equilibrium under longer
+training rather than driving toward zero. Geometry is stable.
+
+The G recipe is the strongest end-to-end Pivot A configuration we
+produced today and is the recommended starting point for cluster Phase 3.
+
 ## What's still open
 
 The semantic gap is now PARTIALLY characterized:
@@ -277,11 +311,12 @@ abandoned branch (attention mask) stays abandoned.
 
 ## Recommended next step
 
-**Strong recommendation (updated with F):** escalate the **F recipe** —
-VICReg λ_reg=2.0, mean-MSE LVR, γ=1.0, var=1.0, cov=0.04, **K=4**, ≥2000
-steps — to cluster Phase 3 at 7B + 125K Visual_CoT. F closed the
-semantic gap (utility +0.132, helpful rate 50%) at 3B with the same
-5K data the K=8 variants used; at 7B/125K the gap should close further.
+**Strong recommendation (updated with G):** escalate the **G recipe** —
+VICReg λ_reg=2.0, mean-MSE LVR, γ=1.0, var=1.0, cov=0.04, **K=4, 2000+
+steps** — to cluster Phase 3 at 7B + 125K Visual_CoT. G is the
+strongest end-to-end configuration we've produced: utility +0.222 at
+3B/5K (4.4× D2's starting point), mean cos 0.372 essentially matching
+Monet stage 2's 0.375, single-position margins up to 0.20 nat.
 
 **Why K=4 now:** at 5K examples × 1000 steps × eff_bsz=4 = 4000
 example-views, K=8 makes 32K position-level updates and K=4 makes 16K
@@ -317,7 +352,8 @@ them):
 - `phase1_5_attn/REPORT.md` — Experiment B baseline (Phase 1.5, no mask)
 - `phase1_5b_attn/REPORT.md` — Experiment B (Phase 1.5b, 4D attention mask)
 - `pivot_a/REPORT.md` — Experiments C1, C2, D1, D2, E (section per variant)
-- `pivot_a/REPORT_F.md` — Experiment F (K=4 follow-up; in a separate file because the K=8 build_report.py couldn't be safely shared)
+- `pivot_a/REPORT_F.md` — Experiment F (K=4 follow-up; separate file from K=8 REPORT.md)
+- `pivot_a/REPORT_G.md` — Experiment G (F+E stacked; comparison vs D2/E/F/Monet stage 2)
 - `phase0_monet_probe/REPORT.md` — Monet stage 2 / stage 3 reference numbers
 
 Plans and design:
