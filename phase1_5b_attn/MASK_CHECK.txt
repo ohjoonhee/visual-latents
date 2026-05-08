@@ -1,0 +1,134 @@
+Phase 1.5b — 4D Attention Mask Sanity Check
+======================================================================
+
+Probe prompt (K=4 latent slots, N=4 image-pad tokens):
+
+  '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<|vision_start|><|image_pad|><|image_pad|><|image_pad|><|image_pad|><|vision_end|>What color is the cat?<|im_end|>\n<|im_start|>assistant\n<abs_vis_token><abs_vis_token_pad><abs_vis_token_pad><abs_vis_token_pad><abs_vis_token_pad></abs_vis_token> The cat is orange.<|im_end|>'
+
+Tokenized:    L = 43
+latent_pad_id = 151665  (token: <abs_vis_token_pad>)
+slot_positions = [32, 33, 34, 35]
+
+Token table (id, decoded):
+
+  0 [151644] '<|im_start|>'
+  1 [  8948] 'system'
+  2 [   198] '\n'
+  3 [  2610] 'You'
+  4 [   525] ' are'
+  5 [   264] ' a'
+  6 [ 10950] ' helpful'
+  7 [ 17847] ' assistant'
+  8 [    13] '.'
+  9 [151645] '<|im_end|>'
+ 10 [   198] '\n'
+ 11 [151644] '<|im_start|>'
+ 12 [   872] 'user'
+ 13 [   198] '\n'
+ 14 [151652] '<|vision_start|>'
+ 15 [151655] '<|image_pad|>'
+ 16 [151655] '<|image_pad|>'
+ 17 [151655] '<|image_pad|>'
+ 18 [151655] '<|image_pad|>'
+ 19 [151653] '<|vision_end|>'
+ 20 [  3838] 'What'
+ 21 [  1894] ' color'
+ 22 [   374] ' is'
+ 23 [   279] ' the'
+ 24 [  8251] ' cat'
+ 25 [    30] '?'
+ 26 [151645] '<|im_end|>'
+ 27 [   198] '\n'
+ 28 [151644] '<|im_start|>'
+ 29 [ 77091] 'assistant'
+ 30 [   198] '\n'
+ 31 [151666] '<abs_vis_token>'
+ 32 [151665] '<abs_vis_token_pad>'
+ 33 [151665] '<abs_vis_token_pad>'
+ 34 [151665] '<abs_vis_token_pad>'
+ 35 [151665] '<abs_vis_token_pad>'
+ 36 [151667] '</abs_vis_token>'
+ 37 [   576] ' The'
+ 38 [  8251] ' cat'
+ 39 [   374] ' is'
+ 40 [ 18575] ' orange'
+ 41 [    13] '.'
+ 42 [151645] '<|im_end|>'
+
+======================================================================
+Mask grid: '#' = allowed, '.' = blocked. 'S' marks slot columns.
+Each row r shows what the query at position r can attend to.
+
+                                    SSSS       
+  0 #..........................................
+  1 ##.........................................
+  2 ###........................................
+  3 ####.......................................
+  4 #####......................................
+  5 ######.....................................
+  6 #######....................................
+  7 ########...................................
+  8 #########..................................
+  9 ##########.................................
+ 10 ###########................................
+ 11 ############...............................
+ 12 #############..............................
+ 13 ##############.............................
+ 14 ###############............................
+ 15 ################...........................
+ 16 #################..........................
+ 17 ##################.........................
+ 18 ###################........................
+ 19 ####################.......................
+ 20 #####################......................
+ 21 ######################.....................
+ 22 #######################....................
+ 23 ########################...................
+ 24 #########################..................
+ 25 ##########################.................
+ 26 ###########################................
+ 27 ############################...............
+ 28 #############################..............
+ 29 ##############################.............
+ 30 ###############################............
+ 31 ################################...........
+ 32 #################################.......... <-- SLOT
+ 33 ################################.#......... <-- SLOT
+ 34 ################################..#........ <-- SLOT
+ 35 ################################...#....... <-- SLOT
+ 36 #####################################......
+ 37 ######################################.....
+ 38 #######################################....
+ 39 ########################################...
+ 40 #########################################..
+ 41 ##########################################.
+ 42 ###########################################
+
+======================================================================
+Sanity-check assertions (slot/slot pair visibility):
+
+  [slot 32 -> slot 32] = True  expected=True  OK
+  [slot 32 -> slot 33] = False  expected=False  OK
+  [slot 32 -> slot 34] = False  expected=False  OK
+  [slot 32 -> slot 35] = False  expected=False  OK
+  [slot 33 -> slot 32] = False  expected=False  OK
+  [slot 33 -> slot 33] = True  expected=True  OK
+  [slot 33 -> slot 34] = False  expected=False  OK
+  [slot 33 -> slot 35] = False  expected=False  OK
+  [slot 34 -> slot 32] = False  expected=False  OK
+  [slot 34 -> slot 33] = False  expected=False  OK
+  [slot 34 -> slot 34] = True  expected=True  OK
+  [slot 34 -> slot 35] = False  expected=False  OK
+  [slot 35 -> slot 32] = False  expected=False  OK
+  [slot 35 -> slot 33] = False  expected=False  OK
+  [slot 35 -> slot 34] = False  expected=False  OK
+  [slot 35 -> slot 35] = True  expected=True  OK
+
+Overall: ALL CHECKS PASS
+
+Slot-context visibility (slot can still see all earlier non-slot tokens):
+
+  slot at 32: can-see-context=32/32, cant-see=[]
+  slot at 33: can-see-context=32/32, cant-see=[]
+  slot at 34: can-see-context=32/32, cant-see=[]
+  slot at 35: can-see-context=32/32, cant-see=[]
