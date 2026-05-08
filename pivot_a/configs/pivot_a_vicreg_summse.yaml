@@ -1,0 +1,45 @@
+# Pivot A — Variant D1: VICReg + paper-faithful sum-MSE LVR
+# Identical to pivot_a_vicreg.yaml except:
+#   - loss_form: sum_d (paper-faithful sum-over-D, ~D=2048× stronger LVR)
+#   - out_dir: pivot_a/results/vicreg_summse
+# Hypothesis: stronger LVR pulls h_t toward v_roi_t harder → n_helpful and
+# utility improve; if VICReg can hold geometry against this stronger pull,
+# the regularizer is robust.
+
+base_model: Qwen/Qwen2.5-VL-3B-Instruct
+
+K: 8
+lambda_lvr: 1.0
+loss_form: sum_d
+
+# Pivot A regularizer (same VICReg params as C2)
+reg_kind: vicreg
+lambda_reg: 1.0
+reg_var_w: 1.0
+reg_cov_w: 0.04
+reg_gamma: 1.0
+
+# Optim / schedule
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 100
+max_steps: 1000
+grad_accum_steps: 4
+
+# Memory
+gradient_checkpointing: true
+
+# Image processor
+min_pixels: 3136
+max_pixels: 401408
+
+# Data
+train_split: train
+n_train_examples: 5000
+
+# Logging
+out_dir: pivot_a/results/vicreg_summse
+log_every: 10
+save_every: 500
+
+seed: 0
