@@ -1,0 +1,49 @@
+🚨 `attention_mask_4d` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `attention_mask_4d` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_factor` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `loss_type` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `output_latent_embeds` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `compute_emphasize_acc` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+[extract-indist] ckpt=phase2_monet_stage2/results/run_p2/checkpoint
+[extract-indist] data=/mnt/ssd/Projects/visual-latents/phase0_monet_probe/data/Monet-SFT-125K/Visual_CoT/train.json
+[extract-indist] manifest=/mnt/ssd/Projects/visual-latents/phase2_monet_stage2/teacher_reps/manifest.json
+[extract-indist] n=200  seed=42
+[extract-indist] loading model (bf16, cuda)
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 60.04it/s]
+[extract-indist] Visual_CoT/train.json has 118561 rows
+[extract-indist] manifest trained sample_ids: 5000
+[extract-indist] pool=10000  eligible (after exclusion)=5000
+[extract-indist] accepted=200  skipped=1
+  [done 1/200] sid=111324 latent=(8, 2048) elapsed=0.5s
+  [done 10/200] sid=110001 latent=(8, 2048) elapsed=3.2s
+  [done 20/200] sid=118293 latent=(8, 2048) elapsed=6.5s
+  [done 30/200] sid=110230 latent=(8, 2048) elapsed=9.7s
+  [done 40/200] sid=110712 latent=(8, 2048) elapsed=13.1s
+  [done 50/200] sid=110434 latent=(8, 2048) elapsed=16.2s
+  [done 60/200] sid=110953 latent=(8, 2048) elapsed=19.6s
+  [done 70/200] sid=112914 latent=(8, 2048) elapsed=23.0s
+  [done 80/200] sid=110970 latent=(8, 2048) elapsed=26.1s
+  [done 90/200] sid=110214 latent=(8, 2048) elapsed=29.3s
+  [done 100/200] sid=110826 latent=(8, 2048) elapsed=32.4s
+  [done 110/200] sid=117791 latent=(8, 2048) elapsed=35.6s
+  [done 120/200] sid=116389 latent=(8, 2048) elapsed=39.0s
+  [done 130/200] sid=110116 latent=(8, 2048) elapsed=42.1s
+  [done 140/200] sid=112802 latent=(8, 2048) elapsed=45.3s
+  [done 150/200] sid=113552 latent=(8, 2048) elapsed=48.6s
+  [done 160/200] sid=113478 latent=(8, 2048) elapsed=51.4s
+  [done 170/200] sid=113657 latent=(8, 2048) elapsed=54.5s
+  [done 180/200] sid=115076 latent=(8, 2048) elapsed=57.5s
+  [done 190/200] sid=116270 latent=(8, 2048) elapsed=61.0s
+  [done 200/200] sid=116445 latent=(8, 2048) elapsed=64.2s
+[extract-indist] done. saved=200  failed=0  elapsed=64.2s

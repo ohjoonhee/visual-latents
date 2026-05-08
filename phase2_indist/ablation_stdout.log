@@ -1,0 +1,48 @@
+[ablate-indist] running: /mnt/ssd/Projects/visual-latents/phase0_monet_probe/.venv-monet/bin/python /mnt/ssd/Projects/visual-latents/phase2_monet_stage2/ablation_runner.py --latents_dir /mnt/ssd/Projects/visual-latents/phase2_indist/latents --self_ckpt /mnt/ssd/Projects/visual-latents/phase2_monet_stage2/results/run_p2/checkpoint --self_name phase2_self --qwen_base Qwen/Qwen2.5-VL-3B-Instruct --K 8 --max_examples 200 --out_results /mnt/ssd/Projects/visual-latents/phase2_indist/ablation_results.jsonl --out_hstats /mnt/ssd/Projects/visual-latents/phase2_indist/ablation_h_stats.jsonl
+🚨 `attention_mask_4d` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLModel.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `attention_mask_4d` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `alignment_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `latent_mode` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `teacher_hidden_states_for_alignment` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_pos` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_patch_vec` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_factor` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `ce_emphasize_poss` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `loss_type` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `output_latent_embeds` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+🚨 `compute_emphasize_acc` is part of Qwen2_5_VLForConditionalGeneration.forward's signature, but not documented. Make sure to add it to the docstring of the function in /mnt/ssd/Projects/visual-latents/phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py.
+[ablate] loaded 200 latent files
+[ablate] loading phase2_self from /mnt/ssd/Projects/visual-latents/phase2_monet_stage2/results/run_p2/checkpoint
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 57.23it/s]
+[ablate] reader=phase2_self  n=200
+`loss_type=None` was set in the config but it is unrecognised.Using the default loss: `ForCausalLMLoss`.
+   [phase2_self] 1/200 elapsed=0s
+   [phase2_self] 25/200 elapsed=6s
+   [phase2_self] 50/200 elapsed=12s
+   [phase2_self] 75/200 elapsed=18s
+   [phase2_self] 100/200 elapsed=24s
+   [phase2_self] 125/200 elapsed=30s
+   [phase2_self] 150/200 elapsed=36s
+   [phase2_self] 175/200 elapsed=42s
+   [phase2_self] 200/200 elapsed=48s
+[ablate] loading qwen_base Qwen/Qwen2.5-VL-3B-Instruct
+You have video processor config saved in `preprocessor.json` file which is deprecated. Video processor configs should be saved in their own `video_preprocessor.json` file. You can rename the file or load and save the processor back which renames it automatically. Loading from `preprocessor.json` will be removed in v5.0.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 58.32it/s]
+[ablate] reader=qwen_base  n=200
+   [qwen_base] 1/200 elapsed=0s
+   [qwen_base] 25/200 elapsed=6s
+   [qwen_base] 50/200 elapsed=12s
+   [qwen_base] 75/200 elapsed=18s
+   [qwen_base] 100/200 elapsed=24s
+   [qwen_base] 125/200 elapsed=30s
+   [qwen_base] 150/200 elapsed=36s
+   [qwen_base] 175/200 elapsed=43s
+   [qwen_base] 200/200 elapsed=49s
+wrote 28 rows → /mnt/ssd/Projects/visual-latents/phase2_indist/ablation_results.jsonl
+wrote 1 rows → /mnt/ssd/Projects/visual-latents/phase2_indist/ablation_h_stats.jsonl
+[ablate-indist] done. /mnt/ssd/Projects/visual-latents/phase2_indist/ablation_results.jsonl, /mnt/ssd/Projects/visual-latents/phase2_indist/ablation_h_stats.jsonl
