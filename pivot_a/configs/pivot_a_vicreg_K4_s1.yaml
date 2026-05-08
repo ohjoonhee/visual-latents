@@ -1,0 +1,34 @@
+# Pivot A — Experiment H: F recipe (K=4, λ_reg=2) with seed=1.
+# Reproducibility check: does K=4's semantic-gap closure replicate across seeds?
+
+base_model: Qwen/Qwen2.5-VL-3B-Instruct
+
+K: 4
+lambda_lvr: 1.0
+loss_form: mean_d
+
+reg_kind: vicreg
+lambda_reg: 2.0
+reg_var_w: 1.0
+reg_cov_w: 0.04
+reg_gamma: 1.0
+
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 100
+max_steps: 1000
+grad_accum_steps: 4
+
+gradient_checkpointing: true
+
+min_pixels: 3136
+max_pixels: 401408
+
+train_split: train
+n_train_examples: 5000
+
+out_dir: pivot_a/results/vicreg_K4_s1
+log_every: 10
+save_every: 0
+
+seed: 1
