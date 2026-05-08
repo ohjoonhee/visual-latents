@@ -49,7 +49,8 @@ own protocol.
 | **Pivot A D2 VICReg λ=2** | 0.792 | 0.341 | 2 | +0.050 | +0.366 | 0.465 | **PASS 3/4** |
 | **Pivot A E (D2 @ 2× steps)** | **0.875** | 0.389 | 2 | +0.088 | +0.450 | 0.465 | **PASS 3/4** |
 | **Pivot A F (D2 @ K=4)** | 0.351 | **0.311** | 2/4 = 50% | +0.132 | +0.331 | 0.512 | **PASS 3/4** |
-| **Pivot A G (F @ 2× steps)** | 0.372 | 0.372 | **2/4 = 50%** | **+0.222** | **+0.426** | 0.512 | **PASS 3/4** |
+| **Pivot A G (F @ 2× steps)** | 0.372 | 0.372 | 2/4 = 50% | **+0.222** | **+0.426** | 0.512 | **PASS 3/4** |
+| **Pivot A H (F @ seed=1)** | **0.478** | 0.310 | 2/4 = 50% | +0.172 | +0.377 | 0.512 | **PASS 4/4** |
 
 The geometry column is the headline. C2 and D2 are the only runs all day
 that landed inside the [0.38, 0.55] Monet-stage-2-like band. Every other
@@ -354,6 +355,7 @@ them):
 - `pivot_a/REPORT.md` — Experiments C1, C2, D1, D2, E (section per variant)
 - `pivot_a/REPORT_F.md` — Experiment F (K=4 follow-up; separate file from K=8 REPORT.md)
 - `pivot_a/REPORT_G.md` — Experiment G (F+E stacked; comparison vs D2/E/F/Monet stage 2)
+- `pivot_a/REPORT_H.md` — Experiment H (F seed=1; reproducibility 4/4 PASS)
 - `phase0_monet_probe/REPORT.md` — Monet stage 2 / stage 3 reference numbers
 
 Plans and design:
