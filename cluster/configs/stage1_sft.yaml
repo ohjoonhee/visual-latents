@@ -1,0 +1,40 @@
+# Stage 1 SFT — NTP-only warmup on Monet-SFT-125K Visual_CoT.
+#
+# Vision tower + projector frozen; LLM full FT. 1 epoch, eff_bsz=128.
+# Output checkpoint becomes the controlled common base for Stage 2 + Pivot A.
+
+run_name: stage1_sft
+wandb: true
+wandb_project: visual-latents
+
+base_model: Qwen/Qwen2.5-VL-7B-Instruct
+
+# Data
+subset: Visual_CoT
+n_train_examples: 0   # 0 = use the full train slice (eval-200 excluded)
+eval_holdout: 200
+
+# Optim / schedule
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 100
+# eff_bsz = 128 = 4 GPUs × micro_bsz=2 × grad_accum=16
+# 1 epoch over ~118K = 922 optimizer steps; budget 1100 to absorb skipped samples.
+max_steps: 1100
+grad_accum_steps: 16  # mirrored from accelerate_zero2.yaml; for trainer logging
+
+# Memory
+gradient_checkpointing: true
+
+# Image processor
+min_pixels: 3136
+max_pixels: 784000   # 1000*28*28
+global_max_pixels: 784000
+per_img_pixels: 392000  # 500*28*28
+
+# Logging
+out_dir: /data/joonhee/visual-latents/cluster_phase3/stage1_sft
+log_every: 10
+save_every: 0  # final-only
+
+seed: 0

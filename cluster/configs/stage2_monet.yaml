@@ -1,0 +1,54 @@
+# Stage 2 Monet baseline — paper-faithful at 7B + 125K Visual_CoT.
+#
+# Recipe (matches phase2_monet_stage2/RECIPE.md, paper column):
+#   - init from stage1_sft checkpoint
+#   - LATENT_SIZE = 8
+#   - alignment_weight = 2.0
+#   - emphasize_latent_weight = 2.0  (we re-introduce vs local PATH-B simplification)
+#   - ce_emphasize_factor = 4.0
+#   - alignment_layer = all_layers (matches local Phase 2)
+#   - 2 epochs over full Visual_CoT (eval-200 excluded)
+#   - eff_bsz = 128 (4 GPUs × micro_bsz=2 × grad_accum=16)
+#   - lr 1e-5, warmup 100, weight_decay 0.01, AdamW betas (0.9, 0.95), bf16
+# Inline teacher pass (no offline precompute) — see trainer_monet_stage2.py header.
+
+run_name: stage2_monet_baseline
+wandb: true
+wandb_project: visual-latents
+
+base_model: Qwen/Qwen2.5-VL-7B-Instruct
+init_ckpt: /data/joonhee/visual-latents/cluster_phase3/stage1_sft/checkpoint
+
+latent_size: 8
+ce_emphasize_factor: 4.0
+alignment_weight: 2.0
+emphasize_latent_weight: 2.0
+alignment_layer: all_layers
+use_attn_mask_4d: true
+
+# Data
+subset: Visual_CoT
+n_train_examples: 0   # full train slice
+eval_holdout: 200
+
+# Optim / schedule
+lr: 1.0e-5
+weight_decay: 0.01
+warmup_steps: 100
+# 2 epochs × 118K / eff_bsz=128 ≈ 1844 steps; budget 2000.
+max_steps: 2000
+grad_accum_steps: 16
+
+# Memory
+gradient_checkpointing: true
+global_max_pixels: 784000
+per_img_pixels: 392000
+min_pixels: 3136
+max_pixels: 784000
+
+# Logging
+out_dir: /data/joonhee/visual-latents/cluster_phase3/stage2_baseline
+log_every: 10
+save_every: 500   # tight 24h budget — checkpoint hourly-ish so we can resume
+
+seed: 0

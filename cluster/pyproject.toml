@@ -1,0 +1,71 @@
+# Cluster-side uv project for Phase 3 (visual-latents).
+#
+# Pinning rationale (informed by phase0_monet_probe/.venv-monet experience):
+# - Python 3.10 mirrors the local Monet probe venv. The vendored
+#   `phase0_monet_probe/monet_model/modeling_qwen2_5_vl_monet.py` was authored
+#   against transformers 4.54.0; newer 4.5x and 5.x branches break the forward
+#   signature (positional-only `loss_type`, etc.).
+# - transformers==4.54.0 hard-pinned. Do not bump without a Phase 0 re-run.
+# - torch resolved against the cu126 wheel index (cluster has cuda/12.6 module).
+# - bitsandbytes is included as an optional dep but unused by these scripts —
+#   bf16 + ZeRO-2 is sufficient for 7B on 4x H100 80GB.
+# - No DeepSpeed-CPU-Adam pin — accelerate's deepspeed plugin will pull
+#   `deepspeed` and select the configured offload optimizer.
+
+[project]
+name = "vl-cluster"
+version = "0.1.0"
+description = "Cluster-side trainers for visual-latents Phase 3 (paper-faithful Monet baseline + Pivot A variants at 7B/125K)."
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+license = { text = "MIT" }
+authors = [{ name = "Joonhee Oh" }]
+
+dependencies = [
+    "torch>=2.5.0,<2.7.0",
+    "torchvision>=0.20.0",
+    "transformers==4.54.0",
+    "accelerate>=1.4.0,<2.0.0",
+    "deepspeed>=0.15.0,<0.17.0",
+    "datasets>=3.2.0",
+    "huggingface_hub>=0.27.0",
+    "wandb>=0.19.0",
+    "pyyaml>=6.0.0",
+    "pillow>=11.0.0",
+    "qwen-vl-utils>=0.0.10",
+    "einops>=0.8.0",
+    "peft>=0.14.0",
+    "numpy>=1.26.0,<3.0.0",
+]
+
+[project.optional-dependencies]
+quant = ["bitsandbytes>=0.45.0"]
+dev = ["pytest>=8.0.0", "ruff>=0.8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+include = [
+    "trainer_sft.py",
+    "trainer_monet_stage2.py",
+    "trainer_pivot.py",
+    "trainer_v3.py",
+    "eval.py",
+    "data_utils.py",
+    "reg.py",
+    "mask_utils.py",
+    "configs/*.yaml",
+]
+
+[tool.uv.sources]
+# Use the cu126 wheel index for torch when running `uv sync` on the cluster.
+torch = [{ index = "pytorch-cu126" }]
+torchvision = [{ index = "pytorch-cu126" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
