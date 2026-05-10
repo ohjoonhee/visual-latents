@@ -1,0 +1,35 @@
+# Smoke variant of stage1_sft.yaml: quick 30-min cluster validation that
+# ZeRO-2 actually shards (mem-after-prepare ~19 GB instead of 75 GB) and
+# at least one optimizer step lands without OOM.
+#
+# Same hyperparams as full run, just tiny n_train_examples + max_steps.
+# DO NOT use this for a real training run.
+
+run_name: stage1_sft_smoke
+wandb: true
+wandb_project: visual-latents
+
+base_model: Qwen/Qwen2.5-VL-7B-Instruct
+
+subset: Visual_CoT
+n_train_examples: 200
+eval_holdout: 100
+
+lr: 1.0e-5
+weight_decay: 0.0
+warmup_steps: 5
+max_steps: 20
+grad_accum_steps: 4
+
+gradient_checkpointing: true
+
+min_pixels: 3136
+max_pixels: 784000
+global_max_pixels: 784000
+per_img_pixels: 392000
+
+out_dir: /data/joonhee/visual-latents/cluster_phase3/stage1_sft_smoke
+log_every: 1
+save_every: 0
+
+seed: 0

@@ -215,6 +215,16 @@ def main():
     model, optim, sched = accelerator.prepare(model, optim, sched)
     model.train()
 
+    if is_main:
+        try:
+            import torch.cuda as _tc
+            alloc_gb = _tc.memory_allocated() / 1e9
+            reserved_gb = _tc.memory_reserved() / 1e9
+            print(f"[mem-after-prepare] dist_type={accelerator.distributed_type} "
+                  f"alloc={alloc_gb:.2f}GB reserved={reserved_gb:.2f}GB world={accelerator.num_processes}", flush=True)
+        except Exception as _e:
+            print(f"[mem-after-prepare] log failed: {_e}", flush=True)
+
     step = 0
     t0 = time.time()
     losses_micro = []

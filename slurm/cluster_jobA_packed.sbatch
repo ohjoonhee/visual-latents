@@ -55,6 +55,10 @@ export TORCH_HOME=/data/joonhee/visual-latents/.cache/torch
 export TORCH_EXTENSIONS_DIR=/data/joonhee/visual-latents/.cache/torch-extensions
 export WANDB_DIR=/data/joonhee/visual-latents/wandb
 # HF_HOME inherited from ~/.bashrc.
+# 214425 hit OOM on every example (~75 GB baseline). Reducing fragmentation
+# helps; the bigger fix was dropping --multi_gpu (was forcing DDP fallback
+# instead of the YAML's ZeRO-2 path).
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cd "$SLURM_SUBMIT_DIR"
 
@@ -93,7 +97,7 @@ echo "[$(date)] [stage1] Stage 1 SFT — Qwen2.5-VL-7B + Monet-SFT-125K Visual_C
 uv --project cluster run --no-sync \
   accelerate launch \
     --config_file cluster/accelerate_zero2.yaml \
-    --num_machines=1 --num_processes=4 --multi_gpu --mixed_precision=bf16 \
+    --num_machines=1 --num_processes=4 --mixed_precision=bf16 \
     cluster/trainer_sft.py \
       --config cluster/configs/stage1_sft.yaml
 STAGE1_RC=$?
@@ -118,7 +122,7 @@ echo "[$(date)] [v1] V1 — Pivot A G recipe at 7B, init from ${STAGE1_CKPT}"
 uv --project cluster run --no-sync \
   accelerate launch \
     --config_file cluster/accelerate_zero2.yaml \
-    --num_machines=1 --num_processes=4 --multi_gpu --mixed_precision=bf16 \
+    --num_machines=1 --num_processes=4 --mixed_precision=bf16 \
     cluster/trainer_pivot.py \
       --config cluster/configs/v1_g_at_7b.yaml
 V1_RC=$?

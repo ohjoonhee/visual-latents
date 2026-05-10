@@ -380,6 +380,16 @@ def main():
     rank = accelerator.process_index
     world = accelerator.num_processes
 
+    if accelerator.is_main_process:
+        try:
+            import torch.cuda as _tc
+            alloc_gb = _tc.memory_allocated() / 1e9
+            reserved_gb = _tc.memory_reserved() / 1e9
+            print(f"[mem-after-prepare] dist_type={accelerator.distributed_type} "
+                  f"alloc={alloc_gb:.2f}GB reserved={reserved_gb:.2f}GB world={world}", flush=True)
+        except Exception as _e:
+            print(f"[mem-after-prepare] log failed: {_e}", flush=True)
+
     step = 0
     t0 = time.time()
     losses_micro = {"total": [], "ntp": [], "lvr": [], "reg": [], "h_norm": [], "v_norm": []}
