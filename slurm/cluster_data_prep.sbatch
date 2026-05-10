@@ -55,7 +55,9 @@ mkdir -p "$DEST"
 echo "[$(date)] downloading Monet-SFT-125K → $DEST"
 # Repo: NOVAglow646/Monet-SFT-125K (HuggingFace dataset). Verified by
 # phase0_monet_probe/download.py.
-uv --project cluster run --no-sync python -c "
+# Use the project root .venv (has huggingface_hub via datasets); no need
+# for the cluster venv (transformers etc.) for a pure HF download.
+uv run python -c "
 from huggingface_hub import snapshot_download
 snapshot_download(
     repo_id='NOVAglow646/Monet-SFT-125K',
