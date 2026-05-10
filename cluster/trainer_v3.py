@@ -327,14 +327,14 @@ def main():
                 obs_poss = step_inputs["obs_poss"]
                 slot_positions = step_inputs["slot_positions"]
 
+                # Monet expects the DICT form (see modeling_qwen2_5_vl_monet.py:1762).
                 attn_mask_4d = None
                 if use_attn_mask_4d:
-                    am = build_monet_4d_attn(
+                    attn_mask_4d = build_monet_4d_attn(
                         input_ids, latent_token_id=special_ids["abs_pad"],
                         pad_mask=attention_mask, dtype=torch.bfloat16,
                         mask_latent=False, latent_cross_isolate=True,
-                    )
-                    attn_mask_4d = am["full_attention"]
+                    )  # {"full_attention": [B,1,L,L]}
 
                 # Teacher forward (frozen).
                 with torch.inference_mode():

@@ -346,17 +346,20 @@ def main():
                 obs_poss = step_inputs["obs_poss"]
 
                 # 4D attention mask (cross-slot isolation; covers prefix + text-chunk + non-latent forwards).
+                # Monet's modeling_qwen2_5_vl_monet expects the DICT form
+                # ({'full_attention': tensor}), not the bare tensor — see
+                # modeling_qwen2_5_vl_monet.py:1762 where it does
+                # attention_mask_4d['full_attention'][b:b+1].
                 attn_mask_4d = None
                 if use_attn_mask_4d:
-                    attn_mask_4d_dict = build_monet_4d_attn(
+                    attn_mask_4d = build_monet_4d_attn(
                         input_ids,
                         latent_token_id=special_ids["abs_pad"],
                         pad_mask=attention_mask,
                         dtype=torch.bfloat16,
                         mask_latent=False,
                         latent_cross_isolate=True,
-                    )
-                    attn_mask_4d = attn_mask_4d_dict["full_attention"]
+                    )  # returns {"full_attention": [B,1,L,L] tensor}
 
                 # ---- Teacher forward (inline, frozen, no grad) ----
                 with torch.inference_mode():

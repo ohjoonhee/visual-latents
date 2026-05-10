@@ -202,7 +202,7 @@ def extract_monet_latents(ckpt_path: Path, *, n: int = 200, K: int = LATENT_SIZE
             batch = proc(text=texts, images=image_inputs, return_tensors="pt", padding=True)
             input_ids = batch["input_ids"].cuda()
             attention_mask = batch["attention_mask"].cuda()
-            pixel_values = batch["pixel_values"].cuda(dtype=torch.bfloat16)
+            pixel_values = batch["pixel_values"].to("cuda", dtype=torch.bfloat16)
             image_grid_thw = batch["image_grid_thw"].cuda()
 
             latent_pad_pattern = torch.tensor([abs_pad_id], dtype=torch.long)
@@ -301,7 +301,7 @@ def extract_pivot_latents(ckpt_path: Path, *, n: int = 200, K: int = LATENT_SIZE
                 continue
             image, question, answer, bbox = tup
             vision_inputs = proc.image_processor(images=image, return_tensors="pt")
-            pixel_values = vision_inputs["pixel_values"].cuda(dtype=torch.bfloat16)
+            pixel_values = vision_inputs["pixel_values"].to("cuda", dtype=torch.bfloat16)
             image_grid_thw = vision_inputs["image_grid_thw"].cuda()
             n_image_tokens = post_merger_token_count(image_grid_thw, merge_size=2)
             v_full = torch.cat(model.model.get_image_features(pixel_values, image_grid_thw), dim=0)
@@ -323,12 +323,18 @@ def extract_pivot_latents(ckpt_path: Path, *, n: int = 200, K: int = LATENT_SIZE
             slot_positions = pad_positions[n_image_tokens : n_image_tokens + K]
             inputs_embeds[0, image_patch_positions, :] = v_full.to(inputs_embeds.dtype)
 
+            # alignment_poss=[[]] bypasses the Monet-patched modeling's
+            # `if alignment_poss[0]:` check (line ~2039 of vendored model)
+            # — it would fail with NoneType subscript otherwise. Empty
+            # list is falsy → routes to the standard "all positions"
+            # hidden-state return path.
             out_h = model(
                 inputs_embeds=inputs_embeds,
                 attention_mask=attention_mask,
                 output_hidden_states=True,
                 use_cache=False,
                 return_dict=True,
+                alignment_poss=[[]],
             )
             last_hidden = out_h.hidden_states[-1]
             h = last_hidden[0, slot_positions, :].detach().cpu()  # [K, D]
