@@ -139,12 +139,14 @@ def main():
     is_main = accelerator.is_main_process
     set_seed(int(cfg.get("seed", 0)))
 
-    # accelerate's YAML schema strips train_micro_batch_size_per_gpu but
-    # DeepSpeed requires it. Inject it directly on the plugin. We iterate
-    # examples one at a time so per-GPU micro batch is 1.
+    # accelerate's DeepSpeedPlugin defaults train_micro_batch_size_per_gpu
+    # to the string "auto" (utils/dataclasses.py L1298). The validator at
+    # accelerator.py L2160 rejects "auto" unless a DataLoader supplies a
+    # batch_size. Our trainer iterates examples manually, so we must
+    # overwrite "auto" with an int — setdefault is not enough.
     ds_plugin = getattr(accelerator.state, "deepspeed_plugin", None)
     if ds_plugin is not None:
-        ds_plugin.deepspeed_config.setdefault("train_micro_batch_size_per_gpu", 1)
+        ds_plugin.deepspeed_config["train_micro_batch_size_per_gpu"] = 1
 
     if is_main:
         print(f"[config] {cfg}", flush=True)
