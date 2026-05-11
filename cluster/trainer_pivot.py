@@ -284,6 +284,13 @@ def main():
     is_main = accelerator.is_main_process
     set_seed(int(cfg.get("seed", 0)))
 
+    # accelerate's YAML schema strips train_micro_batch_size_per_gpu but
+    # DeepSpeed requires it. Inject directly on the plugin. Trainer
+    # iterates examples one at a time, so per-GPU micro batch is 1.
+    ds_plugin = getattr(accelerator.state, "deepspeed_plugin", None)
+    if ds_plugin is not None:
+        ds_plugin.deepspeed_config.setdefault("train_micro_batch_size_per_gpu", 1)
+
     out_dir = Path(cfg["out_dir"])
     if is_main:
         out_dir.mkdir(parents=True, exist_ok=True)

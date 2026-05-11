@@ -10,7 +10,9 @@ deepspeed_config:
   zero3_init_flag: false
   zero_stage: 2
   zero3_save_16bit_model: false
-  train_micro_batch_size_per_gpu: 1
+  # train_micro_batch_size_per_gpu is required by DeepSpeed but is NOT in
+  # accelerate's YAML schema (silently stripped). It is set on the plugin
+  # programmatically inside the trainers, post-Accelerator() init.
 downcast_bf16: 'no'
 machine_rank: 0
 main_training_function: main
