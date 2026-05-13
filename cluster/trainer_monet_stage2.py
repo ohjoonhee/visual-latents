@@ -12,14 +12,32 @@ Differences from `phase2_monet_stage2/trainer.py` (local 3B/5K):
 - `attention_mask_4d` is set per batch via `mask_utils.build_monet_4d_attn`
   (latent_cross_isolate=True, mask_latent=False — matches Phase 1.5b
   semantics and is the closest non-vendored approximation to upstream).
-- `emphasize_latent_weight=2.0`: latent-only backprop trick. The local
-  Phase 2 trainer omitted this (PATH B simplification — line 23 of
-  phase2_monet_stage2/trainer.py); here we re-introduce it. The mechanism:
-  combine `total = ce_loss + alignment_weight * align_loss` but ALSO add a
-  separate `emphasize_latent_weight * align_loss_latent_only` term whose
-  gradient is allowed to flow only through the latent generation pass.
-  We approximate by backprop-ing twice with gradient masking — see
-  `_apply_emphasize_latent` below.
+- `emphasize_latent_weight=2.0`: paper-name for the "latent-only backprop"
+  trick (`compute_latents_only_loss` in upstream). The paper variant
+  adds a SECOND alignment term whose grad flows ONLY through the latent
+  generation pass (not the LLM trunk). KNOWN APPROXIMATION (see Deviation
+  #1 below): we add it as a plain scalar — same mathematical effect as
+  raising `alignment_weight` to (alignment_weight + emphasize_latent_weight).
+  This is more diffuse signal than the paper's latent-only locality, but
+  it is what the local Phase 2 + this cluster trainer both currently
+  implement. If a future iteration needs paper-faithful locality, route
+  the latent-only term through a detached student trunk before backprop.
+
+DEVIATIONS FROM UPSTREAM (audit notes — read before claiming
+"paper-faithful"):
+  1. `emphasize_latent_weight` is approximated as a plain scalar add
+     (described above). Effective: `total = ce + (aw+elw) * align`. The
+     paper backprops the second term only through the latent-generation
+     graph; we backprop it through everything.
+  2. `attention_mask_4d` is hand-rolled in `mask_utils.build_monet_4d_attn`
+     with `latent_cross_isolate=True, mask_latent=False`. Upstream's
+     `build_4d_attn` does similar work but with different bookkeeping for
+     prefix tokens and auxiliary-image isolation. The mask test in
+     `phase1_5b_attn/MASK_VALIDATION.md` showed the approximation is
+     correct on the cases we tested.
+  3. Inline teacher forward (not offline-precomputed) — described below.
+     Functionally equivalent to upstream when the teacher checkpoint is
+     identical, but adds ~14 GB/rank to the resident footprint.
 - `ce_emphasize_factor=4.0` — pass-through to the patched forward.
 
 INLINE TEACHER REP. The local Phase 2 used a CPU-cached teacher forward
@@ -206,6 +224,14 @@ def main():
     is_main = accelerator.is_main_process
     set_seed(int(cfg.get("seed", 0)))
 
+    # accelerate's DeepSpeedPlugin defaults train_micro_batch_size_per_gpu
+    # to "auto", which the validator rejects without a DataLoader. We
+    # iterate examples manually, so overwrite with an int (setdefault is
+    # not enough because the "auto" string already occupies the key).
+    ds_plugin = getattr(accelerator.state, "deepspeed_plugin", None)
+    if ds_plugin is not None:
+        ds_plugin.deepspeed_config["train_micro_batch_size_per_gpu"] = 1
+
     out_dir = Path(cfg["out_dir"])
     if is_main:
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -318,6 +344,20 @@ def main():
     student.train()
     rank = accelerator.process_index
     world = accelerator.num_processes
+
+    if accelerator.is_main_process:
+        try:
+            import torch.cuda as _tc
+            alloc_gb = _tc.memory_allocated() / 1e9
+            reserved_gb = _tc.memory_reserved() / 1e9
+            # Stage 2 holds student (ZeRO-2 sharded) + teacher (full-resident,
+            # frozen, per-rank). At 7B bf16 the teacher alone is ~14 GB/rank,
+            # so expect alloc ≈ 30-35 GB at rest (before any forward acts).
+            # If you see <20 GB this is a DDP fallback (check dist_type).
+            print(f"[mem-after-prepare] dist_type={accelerator.distributed_type} "
+                  f"alloc={alloc_gb:.2f}GB reserved={reserved_gb:.2f}GB world={world}", flush=True)
+        except Exception as _e:
+            print(f"[mem-after-prepare] log failed: {_e}", flush=True)
 
     step = 0
     t0 = time.time()
