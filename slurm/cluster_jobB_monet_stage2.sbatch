@@ -131,11 +131,12 @@ fi
 echo "[$(date)] Stage 1 ckpt OK at ${STAGE1_CKPT} ($(du -sh $STAGE1_CKPT | cut -f1))"
 
 # Released Monet Stage 2 ckpt path (eval-only reference). Two plausible
-# locations: (a) the local_dir from phase0_monet_probe/download.py
-# mirrored to cluster disk; (b) HF Hub cache. Probe both; if neither
-# exists, eval continues without the released-stage2 arm (warning only).
-RELEASED_S2_A=/data/joonhee/visual-latents/phase0_monet_probe/checkpoints/Monet-SFT-7B/stage2
-RELEASED_S2_B=$(ls -d /data/joonhee/visual-latents/.cache/huggingface/hub/models--NOVAglow646--Monet-SFT-7B/snapshots/*/stage2 2>/dev/null | head -1)
+# locations: (a) the local_dir from phase0_monet_probe/download.py at
+# the cluster repo path; (b) HF Hub cache (HF_HOME=/data/joonhee/.cache).
+# Probe both; if neither exists, eval continues without the released-
+# stage2 arm (warning only).
+RELEASED_S2_A=$HOME/projects/visual-latents/phase0_monet_probe/checkpoints/Monet-SFT-7B/stage2
+RELEASED_S2_B=$(ls -d /data/joonhee/.cache/huggingface/hub/models--NOVAglow646--Monet-SFT-7B/snapshots/*/stage2 2>/dev/null | head -1)
 if [ -d "$RELEASED_S2_A" ]; then
   RELEASED_S2_CKPT=$RELEASED_S2_A
 elif [ -n "$RELEASED_S2_B" ] && [ -d "$RELEASED_S2_B" ]; then
