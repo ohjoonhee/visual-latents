@@ -126,6 +126,83 @@ def _build_card(
     repo_short = repo.split("/")[-1]
     max_steps = (cfg or {}).get("max_steps", "?")
 
+    # Autodetect stage from the config to pick the right template.
+    # Stage 2 is identified by `alignment_weight` or `latent_size` (the
+    # alignment objective + latent slot K). Stage 1 SFT (NTP-only) has
+    # neither. Pivot A variants have `lambda_lvr` or `lambda_reg`.
+    has_alignment = bool(cfg) and (
+        cfg.get("alignment_weight") is not None
+        or cfg.get("latent_size") is not None
+    )
+    has_lvr = bool(cfg) and (
+        cfg.get("lambda_lvr") is not None or cfg.get("lambda_reg") is not None
+    )
+    if has_alignment:
+        stage_kind = "stage2"
+    elif has_lvr:
+        stage_kind = "pivot"
+    else:
+        stage_kind = "stage1-sft"
+
+    if stage_kind == "stage2":
+        identity = (
+            "Stage 2 reproduction of Monet-style visual-CoT training on "
+            f"`{base_model}`. Initialised from a Stage 1 SFT base; trained on the "
+            f"`{dataset_id}` dataset."
+        )
+        recipe_heading = "- Stage: 2 (post-SFT, alignment + emphasized-CE objective)"
+        deviations_block = """### Known deviations from the Monet paper
+1. `emphasize_latent_weight` applied as a plain scalar add (paper uses
+   latent-only backprop locality via `compute_latents_only_loss`).
+   Effective: `total = ce + (alignment_weight + emphasize_latent_weight) * align`.
+2. `attention_mask_4d` is hand-rolled in `mask_utils.build_monet_4d_attn`
+   with `latent_cross_isolate=True`. Verified equivalent on tested cases
+   (see `phase1_5b_attn/MASK_VALIDATION.md`) but not byte-identical to upstream.
+3. Inline teacher forward (not offline-precomputed). Functionally
+   equivalent if teacher checkpoint is the same; saves precompute storage."""
+        stage_tag = "stage2"
+    elif stage_kind == "pivot":
+        identity = (
+            f"Pivot A variant on `{base_model}`. Trains K latent slots with an "
+            "LVR (mean-MSE to ROI image features) objective plus a collapse-"
+            f"prevention regularizer. Dataset: `{dataset_id}`."
+        )
+        recipe_heading = "- Stage: Pivot A (LVR + regularizer; no Monet alignment loss)"
+        deviations_block = """### Notes on the recipe
+LVR/VICReg recipe — see `cluster/trainer_pivot.py` for the loss form and
+the bbox-to-ROI helper. On Monet-SFT-125K the per-example bbox is a
+center-crop fallback (no per-example coords in the dataset), so the LVR
+target is a fixed central patch rather than a question-conditional region."""
+        stage_tag = "pivotA"
+    else:  # stage1-sft
+        identity = (
+            f"Stage 1 NTP SFT fine-tune of `{base_model}` on the "
+            f"`{dataset_id}` dataset (Monet-SFT-125K Visual_CoT subset). "
+            "Trains the model to emit `<observation>` and other Monet special "
+            "tokens fluently before Stage 2's alignment objective layers in "
+            "latent slots. Baseline reference for downstream Stage 2 / Pivot A runs."
+        )
+        recipe_heading = "- Stage: 1 (NTP SFT; no alignment, no latent slots)"
+        deviations_block = """### Notes
+Pure NTP SFT — no Monet Stage 2 alignment loss, no latent-mode forward.
+The Monet special tokens (`<observation>`, `<abs_vis_token>`, etc.) ARE
+registered in the tokenizer and embedded so the model learns to produce
+them, but the architectural latent-slot mechanism is unused at this stage."""
+        stage_tag = "stage1-sft"
+
+    # Limitations phrasing depends on whether this is a final or
+    # mid-training checkpoint (heuristic: step == max_steps means final).
+    is_final = (
+        isinstance(max_steps, int) and step == max_steps
+    ) or (
+        last_log is not None and last_log.get("step") == step
+        and isinstance(max_steps, int) and step >= max_steps - 10
+    )
+    if is_final:
+        limitations = f"Research checkpoint, eval-only. Final checkpoint at step {step}/{max_steps}."
+    else:
+        limitations = f"Research checkpoint, eval-only. Mid-training step ({step}/{max_steps})."
+
     card = f"""---
 license: apache-2.0
 library_name: transformers
@@ -137,34 +214,24 @@ tags:
   - visual-cot
   - monet
   - vlatents
-  - stage2
+  - {stage_tag}
   - research-checkpoint
 ---
 
 # {repo_short}
 
-**One-line identity:** Stage 2 reproduction of Monet-style visual-CoT training on
-`{base_model}`. Initialised from a Stage 1 SFT base; trained on the
-`{dataset_id}` dataset.
+**One-line identity:** {identity}
 
 ## Recipe
 
-- Stage: 2 (post-SFT, alignment + emphasized-CE objective)
+{recipe_heading}
 - Base model: `{base_model}`
 - Init checkpoint: `{init_ckpt}`
 - Dataset: `{dataset_id}` (Monet-SFT-125K Visual_CoT subset, eval-200 excluded)
 - Hardware: 4× H100 80GB, DeepSpeed ZeRO-2 + CPU optim offload, bf16
 {recipe_block}
 
-### Known deviations from the Monet paper
-1. `emphasize_latent_weight` applied as a plain scalar add (paper uses
-   latent-only backprop locality via `compute_latents_only_loss`).
-   Effective: `total = ce + (alignment_weight + emphasize_latent_weight) * align`.
-2. `attention_mask_4d` is hand-rolled in `mask_utils.build_monet_4d_attn`
-   with `latent_cross_isolate=True`. Verified equivalent on tested cases
-   (see `phase1_5b_attn/MASK_VALIDATION.md`) but not byte-identical to upstream.
-3. Inline teacher forward (not offline-precomputed). Functionally
-   equivalent if teacher checkpoint is the same; saves precompute storage.
+{deviations_block}
 
 ## This revision (`step-{step}`)
 
@@ -172,8 +239,7 @@ tags:
 
 {notes_block}
 
-Other revisions: see the **revisions** dropdown on this page (`step-500`,
-`step-1000`, etc., as available).
+Other revisions: see the **revisions** dropdown on this page.
 
 ## How to load
 
@@ -186,8 +252,8 @@ p = AutoProcessor.from_pretrained("{repo}", revision="step-{step}")
 
 ## Limitations
 
-Research checkpoint, eval-only. Mid-training step ({step}/{max_steps}).
-Not for production. Recipe deviations from the Monet paper are listed above.
+{limitations}
+Not for production.
 
 ---
 Card generated {today} from training_log.jsonl + the run's training config.
