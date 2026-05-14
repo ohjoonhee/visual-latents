@@ -51,8 +51,13 @@ slack_notify () {
 }
 LOGFILE="logs/${SLURM_JOB_NAME}_${SLURM_JOB_ID}.log"
 ABSLOG="$(readlink -f "$LOGFILE" 2>/dev/null || realpath "$LOGFILE")"
-slack_notify ":mag: START vl-smoke-zero2 | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME}
-log: \`${ABSLOG}\`"
+SCRIPT_PATH="${ORIG_SBATCH_SCRIPT:-<unknown>}"
+
+# §3-H mandatory START format — do not modify emoji or field order.
+slack_notify ":rocket: JOB START | ${SLURM_JOB_NAME} | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME}
+script: \`${SCRIPT_PATH}\`
+log: \`${ABSLOG}\`
+follow: \`tail -n 200 -F ${ABSLOG}\`"
 
 echo "[$(date)] uv sync"
 uv --project cluster sync 2>&1 | tail -10
@@ -69,9 +74,10 @@ uv --project cluster run --no-sync \
       --config cluster/configs/stage1_sft_smoke.yaml
 RC=$?
 
+# §3-H mandatory DONE / FAIL format — do not modify.
 if [ $RC -eq 0 ]; then
-  slack_notify ":white_check_mark: vl-smoke-zero2 DONE rc=0 (jobid=${SLURM_JOB_ID})"
+  slack_notify ":white_check_mark: DONE ${SLURM_JOB_NAME} (jobid=${SLURM_JOB_ID})"
 else
-  slack_notify ":x: vl-smoke-zero2 FAILED rc=${RC} (jobid=${SLURM_JOB_ID})"
+  slack_notify ":x: FAIL ${SLURM_JOB_NAME} (jobid=${SLURM_JOB_ID}) exit=${RC}"
 fi
 exit $RC
