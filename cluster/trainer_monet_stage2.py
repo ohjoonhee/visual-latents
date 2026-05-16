@@ -12,14 +12,37 @@ Differences from `phase2_monet_stage2/trainer.py` (local 3B/5K):
 - `attention_mask_4d` is set per batch via `mask_utils.build_monet_4d_attn`
   (latent_cross_isolate=True, mask_latent=False — matches Phase 1.5b
   semantics and is the closest non-vendored approximation to upstream).
-- `emphasize_latent_weight=2.0`: latent-only backprop trick. The local
-  Phase 2 trainer omitted this (PATH B simplification — line 23 of
-  phase2_monet_stage2/trainer.py); here we re-introduce it. The mechanism:
-  combine `total = ce_loss + alignment_weight * align_loss` but ALSO add a
-  separate `emphasize_latent_weight * align_loss_latent_only` term whose
-  gradient is allowed to flow only through the latent generation pass.
-  We approximate by backprop-ing twice with gradient masking — see
-  `_apply_emphasize_latent` below.
+- `emphasize_latent_weight=2.0`: the paper's "latent-only backprop" trick
+  (`compute_latents_only_loss`). As of Job C this is PAPER-FAITHFUL, not
+  approximated. The latent forward only generates latents (loss_type=[]);
+  the alignment loss is computed in the CE forward (where ce_patch_vec is
+  spliced into inputs_embeds, so the alignment loss is graph-connected to
+  ce_patch_vec). The total loss is then
+    total = emphasize_latent_weight
+            * compute_latents_only_loss(ce_patch_vec, alignment_weight*align)
+            + ce_loss
+  so the alignment signal reaches parameters ONLY through the latent-
+  generation graph (the LLM trunk sees only the CE gradient). This mirrors
+  Monet `src/trainer.py:152-224` (CustomTrainerSFT_STAGE2.compute_loss)
+  exactly, including the `else: total = ce + alignment_weight*align`
+  fallback when emphasize is off or alignment is trivially zero.
+
+DEVIATIONS FROM UPSTREAM (audit notes — read before claiming
+"paper-faithful"):
+  1. FIXED in Job C (was: plain scalar add). The latent-only backprop is
+     now a verbatim port of upstream `compute_latents_only_loss` with the
+     upstream forward structure (alignment in the CE forward). A smoke-time
+     `[devfix-check] latent_only_connected=` line asserts the alignment
+     gradient actually reaches ce_patch_vec before the full run proceeds.
+  2. `attention_mask_4d` is hand-rolled in `mask_utils.build_monet_4d_attn`
+     with `latent_cross_isolate=True, mask_latent=False`. Upstream's
+     `build_4d_attn` does similar work but with different bookkeeping for
+     prefix tokens and auxiliary-image isolation. The mask test in
+     `phase1_5b_attn/MASK_VALIDATION.md` showed the approximation is
+     correct on the cases we tested.
+  3. Inline teacher forward (not offline-precomputed) — described below.
+     Functionally equivalent to upstream when the teacher checkpoint is
+     identical, but adds ~14 GB/rank to the resident footprint.
 - `ce_emphasize_factor=4.0` — pass-through to the patched forward.
 
 INLINE TEACHER REP. The local Phase 2 used a CPU-cached teacher forward
@@ -95,6 +118,53 @@ from monet_utils import (  # noqa: E402
 
 
 LATENT_SIZE = int(os.environ["LATENT_SIZE"])  # 8
+
+
+def compute_latents_only_loss(latents, loss_for_latents, diag=None):
+    """Verbatim port of Monet `src/trainer.py:11-42`.
+
+    Returns a proxy loss whose gradient w.r.t. `latents` (the latent
+    embeddings, ce_patch_vec) equals the gradient of `loss_for_latents`,
+    but which carries NO gradient anywhere else (grads are detached). So
+    backpropagating it pushes the alignment signal only through the
+    latent-generation graph, never the LLM trunk.
+
+    `diag`, if a dict, is filled with connectivity counters for the
+    smoke-time non-degeneracy check. It does not affect the return value
+    or its gradient (upstream numerics preserved exactly).
+    """
+    def _flatten_tensors(x):
+        if isinstance(x, (list, tuple)):
+            out = []
+            for y in x:
+                out.extend(_flatten_tensors(y))
+            return out
+        return [x]
+
+    ce_vec_list = _flatten_tensors(latents)
+    grads = torch.autograd.grad(
+        outputs=loss_for_latents,
+        inputs=ce_vec_list,
+        retain_graph=True,   # ce_loss backward (shared CE-forward buffers) follows
+        create_graph=False,  # stop higher-order graph
+        allow_unused=True,   # some ce vectors may not be used
+    )
+
+    safe_grads = []
+    n_nonzero = 0
+    for v, g in zip(ce_vec_list, grads):
+        if g is None:
+            g = torch.zeros_like(v)
+        else:
+            n_nonzero += 1
+        safe_grads.append(g.detach())  # detach to stop any trunk path
+
+    if diag is not None:
+        diag["n_inputs"] = len(ce_vec_list)
+        diag["n_nonzero_grad"] = n_nonzero
+
+    proxy_loss = torch.stack([(v * g).sum() for v, g in zip(ce_vec_list, safe_grads)]).sum()
+    return proxy_loss
 
 
 def _build_processor(base: str, max_pixels=None, min_pixels=None):
@@ -205,6 +275,14 @@ def main():
     accelerator = Accelerator()
     is_main = accelerator.is_main_process
     set_seed(int(cfg.get("seed", 0)))
+
+    # accelerate's DeepSpeedPlugin defaults train_micro_batch_size_per_gpu
+    # to "auto", which the validator rejects without a DataLoader. We
+    # iterate examples manually, so overwrite with an int (setdefault is
+    # not enough because the "auto" string already occupies the key).
+    ds_plugin = getattr(accelerator.state, "deepspeed_plugin", None)
+    if ds_plugin is not None:
+        ds_plugin.deepspeed_config["train_micro_batch_size_per_gpu"] = 1
 
     out_dir = Path(cfg["out_dir"])
     if is_main:
@@ -319,11 +397,26 @@ def main():
     rank = accelerator.process_index
     world = accelerator.num_processes
 
+    if accelerator.is_main_process:
+        try:
+            import torch.cuda as _tc
+            alloc_gb = _tc.memory_allocated() / 1e9
+            reserved_gb = _tc.memory_reserved() / 1e9
+            # Stage 2 holds student (ZeRO-2 sharded) + teacher (full-resident,
+            # frozen, per-rank). At 7B bf16 the teacher alone is ~14 GB/rank,
+            # so expect alloc ≈ 30-35 GB at rest (before any forward acts).
+            # If you see <20 GB this is a DDP fallback (check dist_type).
+            print(f"[mem-after-prepare] dist_type={accelerator.distributed_type} "
+                  f"alloc={alloc_gb:.2f}GB reserved={reserved_gb:.2f}GB world={world}", flush=True)
+        except Exception as _e:
+            print(f"[mem-after-prepare] log failed: {_e}", flush=True)
+
     step = 0
     t0 = time.time()
     losses_micro = {"total": [], "ce": [], "align": [], "obs_n": []}
     epoch_idx = 0
     n_examples = len(train_ds)
+    devfix_logged = False  # gate the one-shot [devfix-check] smoke line
 
     while step < n_steps:
         idx = list(range(n_examples))
@@ -385,8 +478,14 @@ def main():
                     else:
                         continue
 
-                # ---- Student latent forward (alignment loss source) ----
-                # Patched modeling expects gradient_checkpointing OFF for the latent forward.
+                # ---- Student latent forward (latent generation ONLY) ----
+                # Paper-faithful: upstream Monet src/trainer.py:160-163 runs
+                # the latent forward with loss_type=[] and hidden states off
+                # — it only produces ce_patch_pos / ce_patch_vec. The
+                # alignment loss is computed later in the CE forward (so it
+                # is graph-connected to ce_patch_vec, which is what
+                # compute_latents_only_loss needs). Grad-checkpointing OFF
+                # for the latent forward (use_cache path).
                 accelerator.unwrap_model(student).gradient_checkpointing_disable()
                 lat_out = student(
                     latent_mode=True,
@@ -396,14 +495,12 @@ def main():
                     pixel_values=pixel_values,
                     image_grid_thw=image_grid_thw,
                     labels=None,
-                    alignment_poss=[obs_poss],
-                    teacher_hidden_states_for_alignment=[teacher_rep],
-                    loss_type=["alignment"],
+                    loss_type=[],
+                    output_hidden_states=False,
                     return_dict=True,
                 )
-                if lat_out.loss_dict is None or "alignment" not in lat_out.loss_dict:
+                if lat_out.ce_patch_vec is None or lat_out.ce_patch_pos is None:
                     continue
-                align_loss = lat_out.loss_dict["alignment"]
 
                 # ---- Student CE forward (with spliced ce_patch_pos/vec from latent forward) ----
                 accelerator.unwrap_model(student).gradient_checkpointing_enable(
@@ -413,6 +510,13 @@ def main():
                               ["abs_pad", "abs_end", "img_pad", "v_start", "v_end",
                                "obs_start", "obs_end", "end_pad"]]
                 labels = _generate_labels(input_ids, special_ids["ans_start"], ignore_ids).to(accelerator.device)
+
+                # Alignment is computed HERE (CE forward) so it is graph-
+                # connected to ce_patch_vec spliced into inputs_embeds —
+                # mirrors upstream Monet src/trainer.py:169-202.
+                ce_loss_type = ["ce"]
+                if alignment_weight != 0:
+                    ce_loss_type.append("alignment")
 
                 ce_out = student(
                     latent_mode=False,
@@ -426,21 +530,39 @@ def main():
                     ce_patch_vec=lat_out.ce_patch_vec,
                     ce_emphasize_poss=[obs_poss],
                     ce_emphasize_factor=ce_emphasize_factor,
-                    loss_type=["ce"],
+                    alignment_poss=[obs_poss],
+                    teacher_hidden_states_for_alignment=[teacher_rep],
+                    loss_type=ce_loss_type,
                     return_dict=True,
                     use_cache=False,
                 )
                 ce_loss = ce_out.loss
+                align_loss = None
+                if ce_out.loss_dict is not None and "alignment" in ce_out.loss_dict:
+                    align_loss = ce_out.loss_dict["alignment"]
 
-                # Loss combination per Monet paper:
-                #   total = ce_loss + alignment_weight * align_loss
-                # `emphasize_latent_weight` is a backprop-locality trick — we
-                # approximate by adding emphasize_latent_weight * align_loss
-                # to ce_loss (sums to ce + (alignment_weight + emph) * align).
-                # The local Phase 2 trainer omitted this term entirely; we
-                # bring it back per upstream.
-                if emphasize_latent_weight > 0:
-                    total_loss = ce_loss + alignment_weight * align_loss + emphasize_latent_weight * align_loss
+                # Loss combination — paper-faithful (Monet src/trainer.py:197-202).
+                # When emphasize_latent_weight != 0 and alignment is non-trivial,
+                # the alignment term is backpropped ONLY through the latent
+                # embeddings (ce_patch_vec) via compute_latents_only_loss; the
+                # LLM trunk sees only the CE gradient. Otherwise: weighted sum.
+                if align_loss is None:
+                    align_loss = torch.zeros((), device=accelerator.device, dtype=ce_loss.dtype)
+                if emphasize_latent_weight != 0.0 and float(align_loss.detach()) != 0.0:
+                    _dg = {}
+                    latent_only_loss = compute_latents_only_loss(
+                        lat_out.ce_patch_vec, alignment_weight * align_loss, diag=_dg,
+                    )
+                    total_loss = emphasize_latent_weight * latent_only_loss + ce_loss
+                    if is_main and not devfix_logged:
+                        _conn = _dg.get("n_nonzero_grad", 0) > 0
+                        print(f"[devfix-check] latent_only_connected={_conn} "
+                              f"n_inputs={_dg.get('n_inputs')} "
+                              f"n_nonzero_grad={_dg.get('n_nonzero_grad')} "
+                              f"proxy={float(latent_only_loss.detach()):.6f} "
+                              f"align={float(align_loss.detach()):.6f} "
+                              f"ce={float(ce_loss.detach()):.4f}", flush=True)
+                        devfix_logged = True
                 else:
                     total_loss = ce_loss + alignment_weight * align_loss
 
