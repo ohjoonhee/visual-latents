@@ -1,0 +1,70 @@
+# Stage 2 Monet — JOB C: paper-faithful latent-only backprop (deviation #1 FIXED).
+#
+# Identical recipe to stage2_monet.yaml (Job B). The ONLY change is in the
+# trainer code (trainer_monet_stage2.py), not the hyperparameters:
+#   Job B: total = ce + alignment_weight*align + emphasize_latent_weight*align
+#          (plain scalar add — grad through the whole LLM trunk)
+#   Job C: total = emphasize_latent_weight
+#                   * compute_latents_only_loss(ce_patch_vec, alignment_weight*align)
+#                   + ce   (alignment grad reaches params ONLY via the
+#                   latent-generation graph — verbatim Monet src/trainer.py)
+#
+# Keeping every hyperparameter identical to Job B is deliberate: Job C is a
+# clean A/B on the single named deviation. Judged on the same internal probe
+# (cluster/eval.py, K=8, n=200) — relative to released stage2 (cos 0.377,
+# util +2.05) and to Job B's collapsed run (cos 0.840, util -5.35).
+#
+# Recipe (unchanged from Job B):
+#   - init from stage1_sft checkpoint (1-epoch SFT — paper-recipe complete;
+#     step-1100 == budgeted max_steps, so not truncated. Extending Stage 1
+#     would itself deviate from the paper, so Job C is Stage-2-only.)
+#   - LATENT_SIZE = 8
+#   - alignment_weight = 2.0
+#   - emphasize_latent_weight = 2.0
+#   - ce_emphasize_factor = 4.0
+#   - alignment_layer = all_layers
+#   - 2 epochs over full Visual_CoT (eval-200 excluded)
+#   - eff_bsz = 128 (4 GPUs × micro_bsz=2 × grad_accum=16)
+#   - lr 1e-5, warmup 100, weight_decay 0.01, AdamW betas (0.9, 0.95), bf16
+# Inline teacher pass (no offline precompute) — see trainer_monet_stage2.py header.
+
+run_name: stage2_monet_jobC_devfix
+wandb: true
+wandb_project: visual-latents
+
+base_model: Qwen/Qwen2.5-VL-7B-Instruct
+init_ckpt: /data/joonhee/visual-latents/cluster_phase3/stage1_sft/checkpoint
+
+latent_size: 8
+ce_emphasize_factor: 4.0
+alignment_weight: 2.0
+emphasize_latent_weight: 2.0
+alignment_layer: all_layers
+use_attn_mask_4d: true
+
+# Data
+subset: Visual_CoT
+n_train_examples: 0   # full train slice
+eval_holdout: 200
+
+# Optim / schedule
+lr: 1.0e-5
+weight_decay: 0.01
+warmup_steps: 100
+# 2 epochs × 118K / eff_bsz=128 ≈ 1844 steps; budget 2000.
+max_steps: 2000
+grad_accum_steps: 16
+
+# Memory
+gradient_checkpointing: true
+global_max_pixels: 784000
+per_img_pixels: 392000
+min_pixels: 3136
+max_pixels: 784000
+
+# Logging
+out_dir: /data/joonhee/visual-latents/cluster_phase3/stage2_jobC
+log_every: 10
+save_every: 500   # tight 24h budget — checkpoint every ~hour so we can resume
+
+seed: 0
