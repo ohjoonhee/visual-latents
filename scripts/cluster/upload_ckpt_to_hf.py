@@ -151,10 +151,15 @@ def _build_card(
             f"`{dataset_id}` dataset."
         )
         recipe_heading = "- Stage: 2 (post-SFT, alignment + emphasized-CE objective)"
-        deviations_block = """### Known deviations from the Monet paper
-1. `emphasize_latent_weight` applied as a plain scalar add (paper uses
-   latent-only backprop locality via `compute_latents_only_loss`).
-   Effective: `total = ce + (alignment_weight + emphasize_latent_weight) * align`.
+        deviations_block = """### Fidelity to the Monet paper
+1. **Latent-only backprop — paper-faithful (Job C).** `emphasize_latent_weight`
+   uses a verbatim port of upstream `compute_latents_only_loss`: the alignment
+   loss is computed in the CE forward (where `ce_patch_vec` is spliced into
+   `inputs_embeds`) and backpropped ONLY through the latent embeddings, i.e.
+   `total = emphasize_latent_weight * compute_latents_only_loss(ce_patch_vec,
+   alignment_weight*align) + ce` (mirrors upstream `src/trainer.py:152-224`).
+   The earlier plain-scalar-add approximation (see the `*-repro-v1` repo) is
+   NOT used here.
 2. `attention_mask_4d` is hand-rolled in `mask_utils.build_monet_4d_attn`
    with `latent_cross_isolate=True`. Verified equivalent on tested cases
    (see `phase1_5b_attn/MASK_VALIDATION.md`) but not byte-identical to upstream.
