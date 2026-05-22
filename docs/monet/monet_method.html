@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monet — method report</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css" id="theme">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #1a1a1a;
+    --muted: #6a6a6a;
+    --accent: #b53f3f;
+    --accent2: #2563a8;
+    --green: #1f8a4d;
+    --yellow: #c79030;
+    --red: #b53f3f;
+    --code-bg: #f0eee8;
+    --hi: #fff3a8;
+  }
+  body { background: var(--bg); color: var(--fg); font-family: "Inter", -apple-system, sans-serif; }
+  .reveal { font-family: "Inter", -apple-system, sans-serif; font-size: 22px; }
+  .reveal h1 { font-size: 2.4em; font-weight: 700; margin-bottom: 0.1em; color: var(--fg); }
+  .reveal h2 { font-size: 1.5em; font-weight: 600; margin-bottom: 0.8em; line-height: 1.25; color: var(--accent); border: none; text-transform: none; text-align: left; }
+  .reveal h3 { font-size: 1.15em; font-weight: 600; color: var(--accent2); text-transform: none; }
+  .reveal h4 { font-size: 1.05em; font-weight: 600; margin: 0.4em 0 0.3em 0; }
+  .reveal p, .reveal ul, .reveal ol, .reveal table { font-size: 0.85em; line-height: 1.5; text-align: left; }
+  .reveal section { text-align: left; }
+  .reveal ul, .reveal ol { display: block; margin-left: 1.2em; }
+  .reveal li { margin-bottom: 0.3em; }
+  .reveal code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-size: 0.9em; color: #623; }
+  .reveal pre.code, .reveal pre.code-wide, .reveal pre.diagram { background: var(--code-bg); padding: 12px 16px; border-radius: 6px; font-size: 0.7em; line-height: 1.45; overflow-x: auto; }
+  .reveal pre.code-wide { font-size: 0.62em; }
+  .reveal pre.diagram { font-family: ui-monospace, "SF Mono", monospace; white-space: pre; color: #444; }
+  .reveal pre.diagram.tight { font-size: 0.62em; line-height: 1.25; }
+  .reveal pre.diagram.big { font-size: 0.75em; }
+  .reveal pre .kw { color: #a23; font-weight: 600; }
+  .reveal pre .cm { color: #888; font-style: italic; }
+  .reveal pre .hi { background: var(--hi); padding: 1px 2px; }
+
+  .title-block { padding-top: 2em; }
+  .title-block h1 { color: var(--accent); }
+  .title-block .subtitle { font-size: 1.2em; font-style: italic; color: var(--muted); margin-bottom: 0.4em; }
+  .title-block .cite { font-size: 0.85em; color: var(--muted); margin-bottom: 2em; }
+  .title-block .hook { font-size: 1.05em; margin-top: 1.5em; padding: 0.8em 1em; border-left: 4px solid var(--accent); background: rgba(181, 63, 63, 0.06); }
+  .nav-hint { color: var(--muted); font-size: 0.75em !important; margin-top: 1em; }
+  .nav-hint kbd { background: #fff; border: 1px solid #ccc; padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6em 2em; margin-top: 1.5em; }
+  .kv-grid div { display: flex; align-items: baseline; gap: 0.6em; }
+  .kv-grid .k { color: var(--muted); font-size: 0.8em; width: 9em; flex-shrink: 0; }
+  .kv-grid .v { font-weight: 500; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0.5em 0; font-size: 0.8em; }
+  th { text-align: left; padding: 0.5em 0.6em; background: #ececec; font-weight: 600; border-bottom: 2px solid #ccc; font-size: 0.95em; }
+  td { padding: 0.45em 0.6em; border-bottom: 1px solid #eaeaea; vertical-align: top; }
+  tr.hot td { background: rgba(255, 200, 100, 0.18); }
+  tr.bad td { background: rgba(181, 63, 63, 0.10); }
+  .ok { color: var(--green); font-weight: 600; }
+  .warn { color: var(--yellow); font-weight: 600; }
+  td.ok, td.warn { font-size: 1.1em; }
+
+  .pipeline-table table { font-size: 0.78em; }
+  .pipeline-table td { line-height: 1.4; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; }
+  .two-col.tight { gap: 1em; margin-top: 0.5em; }
+  .two-col .col { min-width: 0; }
+  .two-col .lbl { color: var(--muted); font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2em; margin-top: 0; }
+  .two-col-list { columns: 2; column-gap: 1.5em; }
+  .two-col-list li { break-inside: avoid; margin-bottom: 0.4em; }
+
+  .eqn { padding: 0.6em 1em; background: #fff; border-left: 3px solid var(--accent2); margin: 0.5em 0; overflow-x: auto; }
+  .eqn.small .katex-display { margin: 0.3em 0; font-size: 0.95em; }
+
+  .callout { padding: 0.7em 1em; background: rgba(37, 99, 168, 0.07); border-left: 4px solid var(--accent2); margin: 0.8em 0; font-size: 0.85em !important; }
+  .callout.small { font-size: 0.78em !important; padding: 0.5em 0.8em; }
+  .callout-small { padding: 0.5em 0.9em; background: rgba(31, 138, 77, 0.07); border-left: 3px solid var(--green); margin: 0.5em 0; font-size: 0.78em !important; }
+
+  /* bar chart for ablation slide */
+  .bar-chart { margin: 1em 0; }
+  .bar-row { display: grid; grid-template-columns: 13em 1fr; align-items: center; gap: 1em; margin-bottom: 0.5em; font-size: 0.85em; }
+  .bar-row .lbl { text-align: right; }
+  .bar { background: #ececec; border-radius: 3px; overflow: hidden; height: 1.8em; position: relative; }
+  .fill { height: 100%; padding: 0 0.6em; line-height: 1.8em; color: white; font-weight: 600; font-size: 0.9em; }
+  .fill.green { background: var(--green); }
+  .fill.yellow { background: var(--yellow); }
+  .fill.red { background: var(--red); }
+  .caption { color: var(--muted); font-size: 0.75em !important; margin-top: 0.4em; }
+
+  /* metric/agreement tables */
+  .metric-table { font-size: 0.78em; }
+  .metric-table td { padding: 0.35em 0.6em; }
+  .metric-table tr.bad td { background: rgba(181, 63, 63, 0.12); font-weight: 500; }
+  .metric-table .ok { color: var(--green); }
+  .agreement-table { font-size: 0.78em; }
+  .agreement-table tr.mismatch td { background: rgba(255, 200, 100, 0.10); }
+  .hp-table { font-size: 0.78em; }
+  .hp-table tr.codeonly td { background: rgba(255, 200, 100, 0.10); }
+  .code-only { color: var(--yellow); font-size: 0.85em; font-style: italic; }
+
+  /* gotchas */
+  .gotcha-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8em; margin-top: 0.5em; }
+  .gotcha { background: rgba(181, 63, 63, 0.05); border-left: 3px solid var(--accent); padding: 0.7em 0.9em; font-size: 0.78em; position: relative; }
+  .gotcha .num { position: absolute; top: 0.3em; right: 0.5em; font-size: 1.6em; font-weight: 700; color: rgba(181, 63, 63, 0.25); }
+  .gotcha p { margin: 0; padding-right: 1.2em; }
+
+  /* hooks */
+  .hook-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8em; margin-top: 0.3em; }
+  .hook-card { background: #fff; border: 1px solid #d8d8d8; border-radius: 5px; padding: 0.6em 0.9em; font-size: 0.75em; }
+  .hook-card.hot { background: rgba(31, 138, 77, 0.07); border-color: var(--green); }
+  .hook-card .hk { display: inline-block; background: var(--accent2); color: white; font-weight: 700; font-size: 0.9em; padding: 1px 8px; border-radius: 3px; margin: 0; }
+  .hook-card.hot .hk { background: var(--green); }
+  .hook-card h4 { font-size: 1em; margin: 0.4em 0 0.3em 0; }
+  .hook-card p { margin: 0; font-size: 1em; }
+
+  /* open questions */
+  .oq-list { display: grid; grid-template-columns: 1fr; gap: 0.5em; }
+  .oq { display: grid; grid-template-columns: 3em 1fr; gap: 0.8em; padding: 0.5em; border-left: 3px solid var(--accent2); background: rgba(37, 99, 168, 0.04); font-size: 0.8em; }
+  .oq .qnum { font-weight: 700; color: var(--accent2); font-size: 1.3em; }
+  .oq p { margin: 0; }
+  .oq p.meta { color: var(--muted); font-size: 0.9em; margin-top: 0.2em; }
+
+  /* footer / source link */
+  .slide-footer { position: fixed; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--muted); z-index: 50; }
+  .slide-footer a { color: var(--accent2); }
+
+  /* source pane (the verbatim) */
+  #sourcePane {
+    position: fixed; top: 0; right: -52vw; width: 50vw; height: 100vh;
+    background: #fefefe; box-shadow: -4px 0 18px rgba(0,0,0,0.12);
+    transition: right 0.25s ease-out; overflow-y: auto; z-index: 1000;
+    padding: 1.6em 2em; font-family: "Inter", sans-serif; font-size: 14px;
+  }
+  #sourcePane.open { right: 0; }
+  #sourcePane h1, #sourcePane h2, #sourcePane h3 { font-family: inherit; }
+  #sourcePane h1 { font-size: 1.4em; color: var(--accent); margin-bottom: 0.5em; }
+  #sourcePane h2 { font-size: 1.15em; color: var(--accent2); margin-top: 1.2em; border: none; text-transform: none; }
+  #sourcePane h3 { font-size: 1em; color: var(--fg); margin-top: 0.8em; }
+  #sourcePane code { background: #f0eee8; padding: 1px 4px; border-radius: 3px; font-size: 0.85em; }
+  #sourcePane pre { background: #f0eee8; padding: 0.6em 1em; border-radius: 4px; font-size: 0.8em; overflow-x: auto; }
+  #sourcePane table { font-size: 0.85em; }
+  #sourcePane blockquote { border-left: 3px solid #ddd; padding-left: 1em; color: var(--muted); }
+  #sourcePane .src-meta { color: var(--muted); font-size: 0.85em; border-bottom: 1px solid #eee; padding-bottom: 0.6em; margin-bottom: 1em; }
+  #sourcePane .src-meta a { color: var(--accent2); }
+  #sourcePane :target { background: rgba(255, 243, 168, 0.45); transition: background 0.5s; }
+
+  .src-toggle { position: fixed; top: 12px; right: 14px; z-index: 1100; background: white; border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit; }
+  .src-toggle:hover { background: #f0f0f0; }
+
+  /* the per-slide "verify in source" link */
+  .verify-link { position: absolute; top: 14px; right: 14px; font-size: 11px; color: var(--accent2); text-decoration: none; padding: 3px 8px; border: 1px solid currentColor; border-radius: 3px; }
+  .verify-link:hover { background: var(--accent2); color: white; }
+</style>
+</head>
+
+<body>
+
+<button class="src-toggle" id="srcToggle" onclick="toggleSrc()">📄 source (S)</button>
+
+<div class="reveal">
+  <div class="slides">
+    <section data-id="title" data-source="0-executive-summary">
+      <a class="verify-link" href="#0-executive-summary" onclick="openSrc('0-executive-summary'); return false;">verify in source ↗</a>
+      
+<div class="title-block">
+  <h1>Monet</h1>
+  <p class="subtitle">Reasoning in Latent Visual Space Beyond Images and Language</p>
+  <p class="cite">Wang et al. — Peking U. + Kuaishou — CVPR 2026 — <a href="https://arxiv.org/abs/2511.21395" target="_blank">arXiv:2511.21395</a></p>
+  <div class="kv-grid">
+    <div><span class="k">Base</span><span class="v">Qwen2.5-VL-7B-Instruct</span></div>
+    <div><span class="k">Repo</span><span class="v"><a href="https://github.com/NOVAglow646/Monet" target="_blank">NOVAglow646/Monet</a></span></div>
+    <div><span class="k">K (latent slots)</span><span class="v">8 (SFT) → 10 (RL)</span></div>
+    <div><span class="k">Data</span><span class="v">Monet-SFT-125K + Thyme-RL (3.2K)</span></div>
+  </div>
+  <p class="hook">Three-stage SFT + VLPO RL teaches an MLLM to <em>think with K continuous embeddings</em> in its own decoder stream — no aux images, no tool calls at inference.</p>
+  <p class="nav-hint">→ arrow keys • <kbd>S</kbd> source pane • <kbd>O</kbd> overview • <kbd>?</kbd> shortcuts</p>
+</div>
+
+    </section>
+    <section data-id="pipeline" data-source="2-end-to-end-pipeline-overview">
+      <a class="verify-link" href="#2-end-to-end-pipeline-overview" onclick="openSrc('2-end-to-end-pipeline-overview'); return false;">verify in source ↗</a>
+      
+<h2>Pipeline at a glance</h2>
+<div class="pipeline-table">
+  <table>
+    <thead><tr><th>Stage</th><th>Aux imgs</th><th>Latents</th><th>Loss</th><th>What it teaches</th></tr></thead>
+    <tbody>
+      <tr><td>1 warm-up</td><td>yes</td><td>no</td><td>NTP + emph-CE on <code>&lt;observation&gt;</code> (ce_emph 2.0)</td><td>format</td></tr>
+      <tr class="hot"><td>2 target latents</td><td>yes (4D-masked: only latents see them)</td><td>K slots per aux-img</td><td>NTP + α·L<sub>align-obs</sub> via latent-only-BP</td><td>latents carry per-layer info of obs tokens</td></tr>
+      <tr><td>3 inference-ready</td><td><strong>no</strong></td><td>yes</td><td>NTP + β·L<sub>align-latent</sub> vs Stage-2 teacher latents</td><td>generate latents from question alone</td></tr>
+      <tr><td>RL (VLPO)</td><td>no</td><td>yes (K=10)</td><td>Group-relative + Gaussian importance ratio</td><td>refine; reward = acc + format</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="callout">Stage 2 is the load-bearing stage. Removing the latent-only-BP surrogate <strong>crashes V★ from 82.20 → 46.07</strong> (paper Table 2).</p>
+
+    </section>
+    <section data-id="latent" data-source="33-the-latent-forward-latent_modetrue">
+      <a class="verify-link" href="#33-the-latent-forward-latent_modetrue" onclick="openSrc('33-the-latent-forward-latent_modetrue'); return false;">verify in source ↗</a>
+      
+<h2>A latent is the previous step's hidden state, fed back as the next step's input embedding</h2>
+<pre class="diagram">
+text tokens ─►┐
+              ▼
+ ┌─────────────────────┐  prev h^(L)        ┌─────────────────────┐
+ │ &lt;latent&gt;             ├──────────────────►│ slot i+1: input     │
+ │ slot i: input h^(L-1)│                   │ embedding = prev h  │
+ │ → run LM → h^(L)     │                   │ → run LM → h^(L)    │
+ └─────────────────────┘                    └─────────────────────┘
+       (Coconut-style hidden-state feedback, K times)
+              ▼
+       &lt;/latent&gt; — text resumes — answer attends to all K
+</pre>
+<ul>
+  <li><strong>K</strong> = 8 (SFT release) or 10 (post-VLPO). Block bracketed by token IDs 151666/151667.</li>
+  <li>Position 0: <code>latent_init_embedding</code> attr or zero. Position i&gt;0: previous step's last-layer hidden state (<code>.detach()</code> in eval, <code>.clone()</code> in train).</li>
+  <li>Each latent is recorded in <code>ce_patch_pos</code> / <code>ce_patch_vec</code> for the CE-forward splice.</li>
+  <li><strong>Batch size 1 only is tested upstream</strong> (in-code warning at <code>modeling_qwen2_5_vl_monet.py:1745</code>).</li>
+</ul>
+
+    </section>
+    <section data-id="latent-only-bp" data-source="52-the-latent-only-backprop-trick">
+      <a class="verify-link" href="#52-the-latent-only-backprop-trick" onclick="openSrc('52-the-latent-only-backprop-trick'); return false;">verify in source ↗</a>
+      
+<h2>The surrogate loss isolates alignment gradient to the latent-generation graph</h2>
+<div class="two-col">
+  <div class="col">
+    <p class="lbl">Paper Eq. 9 — what's optimized</p>
+    <div class="eqn">$$\mathcal{L}'_{\text{align-obs}} = \frac{1}{N}\sum_i \text{stop\_grad}\!\bigg(\frac{\partial \mathcal{L}_{\text{align-obs}}}{\partial \hat h^{(i,L)}_{\text{latent}}}\bigg)^{\!\top}\; \hat h^{(i,L)}_{\text{latent}}$$</div>
+    <p class="lbl">Eq. 10 — resulting flow</p>
+    <div class="eqn">$$\frac{\partial \mathcal{L}'_{\text{align-obs}}}{\partial \theta} = \bigg(\frac{\partial \mathcal{L}_{\text{align-obs}}}{\partial \hat h^{(i,L)}_{\text{latent}}}\bigg)\;\bigg(\frac{\partial \hat h^{(i,L)}_{\text{latent}}}{\partial \theta}\bigg)$$</div>
+    <p><em>"Gradients flow only through the generated latent embeddings to the model parameters."</em></p>
+  </div>
+  <div class="col">
+    <p class="lbl">Code (<code>src/trainer.py:11-42</code>, verbatim)</p>
+    <pre class="code"><span class="kw">def</span> compute_latents_only_loss(latents, loss_for_latents):
+    ce_vec_list = _flatten_tensors(latents)
+    grads = <span class="hi">torch.autograd.grad</span>(
+        outputs=loss_for_latents,
+        inputs=ce_vec_list,
+        <span class="hi">retain_graph=True</span>,
+        create_graph=False,
+        <span class="hi">allow_unused=True</span>,
+    )
+    safe_grads = [g.detach() <span class="kw">if</span> g <span class="kw">is not</span> <span class="kw">None</span>
+                  <span class="kw">else</span> torch.zeros_like(v)
+                  <span class="kw">for</span> v, g <span class="kw">in</span> zip(ce_vec_list, grads)]
+    proxy_loss = torch.stack(
+        [<span class="hi">(v * g).sum()</span> <span class="kw">for</span> v, g <span class="kw">in</span> zip(ce_vec_list, safe_grads)]
+    ).sum()
+    <span class="kw">return</span> proxy_loss</pre>
+  </div>
+</div>
+<p class="callout"><strong>Footgun:</strong> <code>allow_unused=True</code> silently returns <code>None</code> → zero grad → silent no-op if <code>ce_patch_vec</code> isn't in the CE-forward graph. Hence our smoke gate <code>[devfix-check] latent_only_connected=True</code>.</p>
+
+    </section>
+    <section data-id="ablation" data-source="132-stage-2-ablation-paper-table-2">
+      <a class="verify-link" href="#132-stage-2-ablation-paper-table-2" onclick="openSrc('132-stage-2-ablation-paper-table-2'); return false;">verify in source ↗</a>
+      
+<h2>Removing the surrogate ≠ small perturbation — it's catastrophic</h2>
+<div class="bar-chart">
+  <div class="bar-row"><span class="lbl">Full Monet-SFT</span><div class="bar"><div class="fill green" style="width: 82.2%">82.20</div></div></div>
+  <div class="bar-row"><span class="lbl">w/o aux images</span><div class="bar"><div class="fill yellow" style="width: 73.3%">73.30</div></div></div>
+  <div class="bar-row"><span class="lbl">w/o obs alignment</span><div class="bar"><div class="fill yellow" style="width: 75.39%">75.39</div></div></div>
+  <div class="bar-row"><span class="lbl"><strong>w/o latent-only BP</strong></span><div class="bar"><div class="fill red" style="width: 46.07%">46.07</div></div></div>
+  <p class="caption">V★ benchmark after Stage 2 (paper Table 2). 0 — 100 scale.</p>
+</div>
+<div class="two-col tight">
+  <div class="col">
+    <p class="lbl">Without the surrogate</p>
+    <p>Alignment gradient flows through the <strong>entire LM trunk</strong> + the latent graph. The trunk is CE-trained; the alignment signal pushes it to compensate for latent miss. Latents stay underdetermined → collapse.</p>
+  </div>
+  <div class="col">
+    <p class="lbl">With the surrogate</p>
+    <p>Alignment gradient flows <strong>only</strong> via <code>θ → ĥ<sub>latent</sub> → … → L<sub>align</sub></code>. Latents are forced to carry the per-layer information of obs tokens.</p>
+  </div>
+</div>
+
+    </section>
+    <section data-id="stage2-assembly" data-source="54-trainer-assembly">
+      <a class="verify-link" href="#54-trainer-assembly" onclick="openSrc('54-trainer-assembly'); return false;">verify in source ↗</a>
+      
+<h2>Two forwards per step: latent then CE. The surrogate connects them.</h2>
+<pre class="code-wide"><span class="cm"># 1. Latent forward — generate ce_patch_vec/pos (no loss yet)</span>
+inputs['latent_mode'] = <span class="kw">True</span>
+inputs['loss_type']   = []
+model.<span class="hi">gradient_checkpointing_disable</span>()       <span class="cm"># use_cache=True needs grad-ckpt off</span>
+outputs = model(**inputs, output_hidden_states=<span class="kw">False</span>)
+
+<span class="cm"># 2. CE forward — splice latents back; compute CE + alignment in one graph</span>
+model.<span class="hi">gradient_checkpointing_enable</span>(...)
+inputs['latent_mode']         = <span class="kw">False</span>
+inputs['<span class="hi">ce_patch_pos</span>']      = outputs.ce_patch_pos
+inputs['<span class="hi">ce_patch_vec</span>']      = outputs.ce_patch_vec   <span class="cm"># spliced into inputs_embeds</span>
+inputs['ce_emphasize_poss']   = inputs['observation_poss']
+inputs['ce_emphasize_factor'] = self.ce_emphasize_factor    <span class="cm"># 4.0</span>
+inputs['loss_type']           = ['ce', 'alignment']
+inputs['alignment_poss']      = inputs['observation_poss']
+inputs['teacher_hidden_states_for_alignment'] = <span class="hi">load_offline_tensor</span>(...)
+teacher_ce_loss, out = super().compute_loss(model, inputs, return_outputs=<span class="kw">True</span>)
+alignment_loss = out.loss_dict['alignment']
+
+<span class="cm"># 3. Surrogate gates on emphasize_latent_weight</span>
+<span class="kw">if</span> self.args.emphasize_latent_weight != 0.0 <span class="kw">and</span> alignment_loss.item() != 0.0:
+    latent_only_loss = <span class="hi">compute_latents_only_loss</span>(
+        outputs.ce_patch_vec, self.args.alignment_weight * alignment_loss)
+    loss = self.args.emphasize_latent_weight * latent_only_loss + teacher_ce_loss
+<span class="kw">else</span>:
+    loss = teacher_ce_loss + self.args.alignment_weight * alignment_loss   <span class="cm"># naive add</span>
+</pre>
+<p class="callout-small">The splice at <code>modeling_qwen2_5_vl_monet.py:2006-2013</code> is the <em>only</em> path where <code>ce_patch_vec</code> is graph-connected to the alignment loss. Skip it → silent no-op.</p>
+
+    </section>
+    <section data-id="alignment" data-source="53-all-layer-alignment-loss">
+      <a class="verify-link" href="#53-all-layer-alignment-loss" onclick="openSrc('53-all-layer-alignment-loss'); return false;">verify in source ↗</a>
+      
+<h2>Cosine distance summed over <strong>all transformer layers</strong> — deviation from prior latent-CoT work</h2>
+<div class="two-col">
+  <div class="col">
+    <p class="lbl">Paper Eq. 1</p>
+    <div class="eqn">$$\mathcal{L}_{\text{align-obs}} = \frac{1}{N}\sum_i \sum_l \big[1 - \cos\big(\text{stop\_grad}(h^{*\,(i,l)}_{\text{obs}}),\; \hat h^{(i,l)}_{\text{obs}}\big)\big]$$</div>
+    <ul>
+      <li>Teacher: same prompt <strong>with</strong> aux images. Stage-1 SFT ckpt as teacher.</li>
+      <li>Student: aux images replaced by K latent slots.</li>
+      <li>Sum over observation-token positions × all layers.</li>
+      <li><code>.detach()</code> on teacher.</li>
+    </ul>
+  </div>
+  <div class="col">
+    <p class="lbl">Code (<code>modeling_qwen2_5_vl_monet.py:244-250</code>)</p>
+    <pre class="code"><span class="kw">def</span> alignment_loss(teacher, student):
+    <span class="kw">if</span> teacher.dim() == 3:    <span class="cm"># [L_layers, N_align, H]</span>
+        <span class="kw">return</span> (1 - F.cosine_similarity(
+            teacher.to(student.device), student
+        )).<span class="hi">mean</span>()
+    <span class="kw">elif</span> teacher.dim() == 1:  <span class="cm"># last-layer fallback</span>
+        <span class="kw">return</span> 1 - F.cosine_similarity(student, teacher, 0)</pre>
+    <p>Paper: <em>"Unlike previous latent-visual reasoning work, which aligns only the final-layer representations, we align all layers."</em></p>
+  </div>
+</div>
+
+    </section>
+    <section data-id="mask" data-source="35-custom-4d-attention-mask">
+      <a class="verify-link" href="#35-custom-4d-attention-mask" onclick="openSrc('35-custom-4d-attention-mask'); return false;">verify in source ↗</a>
+      
+<h2>Aux images are visible <em>only</em> to latent embeddings, never to subsequent text</h2>
+<pre class="diagram big">
+   question image ───────────────► everyone (default)
+
+   aux_image_i ─────────► latent_block_i (4D mask: allowed)
+                          │
+                          └─► obs_tokens_i (allowed)
+                                │
+                                └─► downstream text (allowed)
+
+   aux_image_i ──✗── obs_tokens   ──✗── downstream text
+                          (blocked by 4D mask)
+</pre>
+<ul>
+  <li><strong>Default Monet flags</strong>: <code>latent_can_see_all_previous=True</code>, observation flags off. So latents see aux images + prior latents; obs/text don't see aux images.</li>
+  <li>Forces the information path: <code>aux_image → latent → obs/text</code>. Latents become the bottleneck.</li>
+  <li>Code: <code>src/utils.py::build_4d_attn</code> with ten boolean flags + <code>find_segments_1d</code>.</li>
+  <li>Mask is dict-form <code>{"full_attention": [B,1,L,L]}</code>; if passed as bare tensor, the model creates a standard causal mask (silent fallback).</li>
+</ul>
+
+    </section>
+    <section data-id="stage3" data-source="7-stage-3--latents-without-aux-images">
+      <a class="verify-link" href="#7-stage-3--latents-without-aux-images" onclick="openSrc('7-stage-3--latents-without-aux-images'); return false;">verify in source ↗</a>
+      
+<h2>Stage 3: student inputs strip assistant-turn aux images; supervise against <em>Stage-2 teacher latents</em></h2>
+<div class="eqn small">$$\mathcal{L}_{\text{stage3}} = \mathcal{L}_{\text{NTP}} + \beta \cdot \mathcal{L}_{\text{align-latent}}, \quad \beta = 2.0$$</div>
+<div class="eqn small">$$\mathcal{L}_{\text{align-latent}} = \frac{1}{N}\sum_i \sum_l \big[1 - \cos\big(\text{stop\_grad}(h^{*\,(i,l)}_{\text{latent}}),\; \hat h^{(i,l)}_{\text{latent}}\big)\big]$$</div>
+<ul class="two-col-list">
+  <li><strong>Same shape as Stage 2</strong>, but align at latent positions, not observation positions.</li>
+  <li><strong>No latent-only-BP surrogate.</strong> Alignment gradient flows through the whole trunk.</li>
+  <li>Teacher = the Stage-2 SFT checkpoint's latent hidden states, precomputed and cached on disk (<code>latent_{all_layers|last_layer}_{ds}_{sid}.pt</code>).</li>
+  <li>Init = Stage 1 ckpt (not Stage 2!).</li>
+  <li>The student's question image is kept; only assistant-turn aux images are dropped.</li>
+</ul>
+<p class="callout">Stage 3 has a structural risk: it supervises against a <em>latent-of-a-latent</em> with no encoder grounding. If the teacher's latents are themselves uniform, the student inherits the uniformity.</p>
+
+    </section>
+    <section data-id="stage3-collapse" data-source="134-our-finding-stage-3-collapse-on-the-released-checkpoint">
+      <a class="verify-link" href="#134-our-finding-stage-3-collapse-on-the-released-checkpoint" onclick="openSrc('134-our-finding-stage-3-collapse-on-the-released-checkpoint'); return false;">verify in source ↗</a>
+      
+<h2>Released Monet-SFT-7B Stage 3 latents are functionally degenerate</h2>
+<div class="two-col">
+  <div class="col">
+    <p class="lbl">Internal probe — n=100, monet-self reader</p>
+    <table class="metric-table">
+      <thead><tr><th>stage</th><th>mean cos</th><th>n_helpful</th><th>utility (nat)</th></tr></thead>
+      <tbody>
+        <tr><td>2 · Visual_CoT</td><td class="ok">0.375</td><td>4</td><td class="ok">+2.71</td></tr>
+        <tr><td>2 · Zebra_count</td><td class="ok">0.394</td><td>2</td><td>+0.19</td></tr>
+        <tr class="bad"><td>3 · Visual_CoT</td><td>0.867</td><td>1</td><td>+0.26</td></tr>
+        <tr class="bad"><td>3 · Zebra_count</td><td>0.840</td><td>0</td><td>-0.001</td></tr>
+      </tbody>
+    </table>
+    <p class="lbl">Per-position single-keep — Stage 3 Visual_CoT</p>
+    <pre class="diagram tight">pos 0   margin +0.089  ████████████████████  helpful
+pos 1   margin -0.113  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+pos 2   margin -0.014  ▒
+pos 3   margin -0.021  ▒▒▒
+pos 4   margin -0.014  ▒
+pos 5   margin -0.055  ▒▒▒▒▒▒
+pos 6   margin -0.241  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒  harmful
+pos 7   margin -0.145  ▒▒▒▒▒▒▒▒▒▒▒▒▒
+</pre>
+  </div>
+  <div class="col">
+    <p class="lbl">Pairwise cosine — Stage 3, Visual_CoT (positions 4-7 collinear)</p>
+    <pre class="diagram tight">     p0   p1   p2   p3   p4   p5   p6   p7
+p0  1.00 0.83 0.68 0.63 0.61 0.60 0.60 0.59
+p1  0.83 1.00 0.94 0.87 0.84 0.83 0.82 0.81
+p2  0.68 0.94 1.00 0.98 0.96 0.94 0.93 0.92
+p3  0.63 0.87 0.98 1.00 0.99 0.98 0.97 0.97
+p4  0.61 0.84 0.96 0.99 <span class="hi">1.00 1.00 0.99 0.99</span>
+p5  0.60 0.83 0.94 0.98 <span class="hi">1.00 1.00 1.00 1.00</span>
+p6  0.60 0.82 0.93 0.97 <span class="hi">0.99 1.00 1.00 1.00</span>
+p7  0.59 0.81 0.92 0.97 <span class="hi">0.99 1.00 1.00 1.00</span>
+</pre>
+    <p class="callout small"><strong>Implication.</strong> The Stage-3 objective drives positions 4–7 to be the same vector. The student-pathway replication gets the same shape — this is the <em>objective</em>'s failure mode, not an extraction artifact.</p>
+    <p class="hook">→ <strong>Prefer Stage-2-style training; skip Stage-3-style self-distill.</strong></p>
+  </div>
+</div>
+
+    </section>
+    <section data-id="vlpo" data-source="8-rl--vlpo">
+      <a class="verify-link" href="#8-rl--vlpo" onclick="openSrc('8-rl--vlpo'); return false;">verify in source ↗</a>
+      
+<h2>RL for continuous latents needs a non-token importance ratio</h2>
+<div class="two-col">
+  <div class="col">
+    <p class="lbl">Policy density for latent slot t (Eq. 7)</p>
+    <div class="eqn small">$$\pi_\theta(h^{\text{old}}_{i,t} \mid Q, I, o_{i,<t}) = \exp\!\bigg(-\frac{1}{2\sigma^2}\|h^{\text{old}}_{i,t} - h^\theta_{i,t}\|^2\bigg) \cdot Z^{-1}$$</div>
+    <p class="lbl">Importance ratio (Eq. 8)</p>
+    <div class="eqn">$$r_{i,t}(\theta) = \exp\!\bigg(-\frac{1}{2\sigma^2}\|h^{\text{old}}_{i,t} - h^\theta_{i,t}\|^2\bigg)$$</div>
+    <p>Treat the old policy's emitted latent as a Gaussian sample from N(h<sub>θ</sub>, σ²I). Normalizer cancels in the ratio.</p>
+  </div>
+  <div class="col">
+    <p class="lbl">Knobs (<code>vlpo_train.sh</code>)</p>
+    <table class="metric-table tight">
+      <tr><td>σ</td><td>10.0</td></tr>
+      <tr><td>K</td><td>10 (up from 8)</td></tr>
+      <tr><td>Rollout N</td><td>8</td></tr>
+      <tr><td>Temperature</td><td>0.5</td></tr>
+      <tr><td>Acc threshold</td><td>0.6 (group filter)</td></tr>
+      <tr><td>KL coef</td><td>0.01 <span class="code-only">(code-only)</span></td></tr>
+      <tr><td>Reward</td><td>accuracy + format</td></tr>
+      <tr><td>Data</td><td>3.2K Thyme-RL</td></tr>
+    </table>
+    <p class="callout small"><strong>Paper Table 5:</strong> VLPO (83.25) &gt; SFT-only (82.20) &gt; SFT+GRPO (80.10). GRPO underperforms <em>and</em> hurts vs no-RL.</p>
+  </div>
+</div>
+
+    </section>
+    <section data-id="inference" data-source="9-inference--vllm-patch">
+      <a class="verify-link" href="#9-inference--vllm-patch" onclick="openSrc('9-inference--vllm-patch'); return false;">verify in source ↗</a>
+      
+<h2>Custom vLLM runner detects <code>&lt;latent&gt;</code> and feeds last-h back as next input embedding</h2>
+<pre class="diagram big">
+   tokens arrive ─► sampling_step
+       │
+       ▼
+   ┌───────────────────────────────────────────────────┐
+   │ if tid == LATENT_START_ID (151666):               │
+   │     state[req_id].active = True                   │
+   │ if state.active and tid == LATENT_END_ID:         │
+   │     state.active = False                          │
+   │ if state.active:                                  │
+   │     state.pending = last_h[i].detach()  ◄── 1D    │
+   └───────────────────────────────────────────────────┘
+       │
+       ▼  next forward, BEFORE forward()
+   ┌───────────────────────────────────────────────────┐
+   │ if state.active and state.pending is not None:    │
+   │     inputs_embeds[row].index_copy_(state.pending) │
+   │     state.pending = None                          │
+   └───────────────────────────────────────────────────┘
+</pre>
+<ul class="two-col-list">
+  <li>Per-request state: <code>{active, pending, current_len}</code>.</li>
+  <li>Auto-emits <code>&lt;/latent&gt;</code> after K=LATENT_SIZE slots.</li>
+  <li>Constraints: single PP rank only; speculative decoding incompatible.</li>
+  <li>Patched into <code>vllm.v1.worker.gpu_model_runner</code> (+ v0 fallbacks) via <code>sys.modules</code>.</li>
+  <li>Token IDs hardcoded: 151666 / 151667.</li>
+  <li><strong>No eval scripts ship in the repo.</strong> Use VLMEvalKit with the boxed-answer system prompt.</li>
+</ul>
+
+    </section>
+    <section data-id="agreement" data-source="10-paper--code-agreement--single-table-summary">
+      <a class="verify-link" href="#10-paper--code-agreement--single-table-summary" onclick="openSrc('10-paper--code-agreement--single-table-summary'); return false;">verify in source ↗</a>
+      
+<h2>Most items agree; the deltas are recorded</h2>
+<table class="agreement-table">
+  <thead><tr><th>Topic</th><th>Paper</th><th>Code</th><th>Δ</th></tr></thead>
+  <tbody>
+    <tr><td>Stage 1 obj</td><td>NTP + emph-CE</td><td><code>loss_type=['ce']</code>, ce_emph 2.0</td><td class="ok">✓</td></tr>
+    <tr><td>Stage 2 obj</td><td>NTP + α·L<sub>align-obs</sub></td><td>Two-mode: surrogate ∥ naive add</td><td class="ok">✓</td></tr>
+    <tr><td>Latent-only BP</td><td>Eq. 9/10</td><td><code>compute_latents_only_loss</code> verbatim</td><td class="ok">✓</td></tr>
+    <tr><td>All-layer alignment</td><td>1 − cos, all layers</td><td><code>alignment_loss</code> 3-D path</td><td class="ok">✓</td></tr>
+    <tr><td>Stage 3 obj</td><td>NTP + β·L<sub>align-latent</sub></td><td><code>ce + β·align</code> (no surrogate)</td><td class="ok">✓</td></tr>
+    <tr><td>4D mask</td><td>aux img → latent only</td><td><code>build_4d_attn</code> w/ default flags</td><td class="ok">✓</td></tr>
+    <tr><td>α, β</td><td>2.0, 2.0</td><td>2.0, 2.0</td><td class="ok">✓</td></tr>
+    <tr><td>K</td><td>{8,10,12} mentioned</td><td>SFT=8, RL=10</td><td class="ok">✓</td></tr>
+    <tr><td>RL σ</td><td>10.0</td><td><code>MONET_RL_SIGMA=10.0</code></td><td class="ok">✓</td></tr>
+    <tr><td>RL acc threshold</td><td>0.6</td><td><code>SELECT_ACC_THRESHOLD=0.6</code></td><td class="ok">✓</td></tr>
+    <tr class="mismatch"><td><code>ce_emphasize_factor</code></td><td>(not in main text)</td><td>2.0 (S1) / 4.0 (S2/S3)</td><td class="warn">code-only</td></tr>
+    <tr class="mismatch"><td><code>emphasize_latent_weight</code></td><td>(not named in paper)</td><td>2.0 (S2 only)</td><td class="warn">code-only</td></tr>
+    <tr class="mismatch"><td>RL KL coef</td><td>(not in Table 8)</td><td>0.01</td><td class="warn">code-only</td></tr>
+    <tr class="mismatch"><td>Training steps</td><td>3885 / 1000 / 1000</td><td><code>--epochs {4,2,2}</code> → ~larger</td><td class="warn">△</td></tr>
+    <tr class="mismatch"><td>License</td><td>(not stated)</td><td>None at top-level; Apache-2.0 in <code>RL/</code> only</td><td class="warn">△</td></tr>
+    <tr class="mismatch"><td>Eval scripts</td><td>VLMEvalKit + boxed prompt</td><td>None ship in-repo</td><td class="warn">△</td></tr>
+  </tbody>
+</table>
+
+    </section>
+    <section data-id="gotchas" data-source="11-code-only-details-gotchas-not-in-paper">
+      <a class="verify-link" href="#11-code-only-details-gotchas-not-in-paper" onclick="openSrc('11-code-only-details-gotchas-not-in-paper'); return false;">verify in source ↗</a>
+      
+<h2>Six things to know that the paper doesn't say</h2>
+<div class="gotcha-grid">
+  <div class="gotcha">
+    <div class="num">1</div>
+    <p><code>allow_unused=True</code> silently zeros the proxy if <code>ce_patch_vec</code> isn't in the CE-forward graph. <em>Smoke-gate this.</em></p>
+  </div>
+  <div class="gotcha">
+    <div class="num">2</div>
+    <p><code>emphasize_latent_weight</code> and <code>alignment_weight</code> are <strong>different knobs</strong>. The 2.0 × 2.0 default gives effective 4× pressure on the latent-generation graph.</p>
+  </div>
+  <div class="gotcha">
+    <div class="num">3</div>
+    <p><code>ce_emphasize_factor</code> jumps from <strong>2.0 (S1) → 4.0 (S2/S3)</strong>. Paper doesn't ablate.</p>
+  </div>
+  <div class="gotcha">
+    <div class="num">4</div>
+    <p><strong>Stage 3 does NOT use the latent-only-BP surrogate.</strong> Paper's emphasis is S2-only.</p>
+  </div>
+  <div class="gotcha">
+    <div class="num">5</div>
+    <p><code>gradient_checkpointing</code> <strong>must be toggled</strong> around the latent forward — disable for latent (use_cache=True), re-enable for CE. Not optional.</p>
+  </div>
+  <div class="gotcha">
+    <div class="num">6</div>
+    <p><strong>batch_size=1 only is tested upstream.</strong> Larger bsz untested per in-code warning at <code>modeling_qwen2_5_vl_monet.py:1745</code>.</p>
+  </div>
+</div>
+
+    </section>
+    <section data-id="hyperparams" data-source="12-hyperparameter-tables--consolidated">
+      <a class="verify-link" href="#12-hyperparameter-tables--consolidated" onclick="openSrc('12-hyperparameter-tables--consolidated'); return false;">verify in source ↗</a>
+      
+<h2>SFT (paper Table 7 vs shipped scripts)</h2>
+<table class="hp-table">
+  <thead><tr><th>Param</th><th>Stage 1</th><th>Stage 2</th><th>Stage 3</th></tr></thead>
+  <tbody>
+    <tr><td>lr</td><td>1e-5</td><td>1e-5</td><td>1e-5</td></tr>
+    <tr><td>bsz × grad_accum</td><td>1 × 16</td><td>1 × 16</td><td>1 × 16</td></tr>
+    <tr><td>weight_decay</td><td>0.01</td><td>0.01</td><td>0.01</td></tr>
+    <tr><td>epochs (script)</td><td>4</td><td>2</td><td>2</td></tr>
+    <tr><td>steps (paper)</td><td>3885 (~3ep)</td><td>1000 (~1ep)</td><td>1000 (~1ep)</td></tr>
+    <tr><td>K (latent_size)</td><td>n/a</td><td>8</td><td>8</td></tr>
+    <tr><td>α / β</td><td>n/a</td><td>2.0</td><td>2.0</td></tr>
+    <tr class="codeonly"><td>emphasize_latent_weight</td><td>n/a</td><td>2.0</td><td>n/a</td></tr>
+    <tr class="codeonly"><td>ce_emphasize_factor</td><td>2.0</td><td>4.0</td><td>4.0</td></tr>
+    <tr><td>alignment_layer</td><td>n/a</td><td>all_layers</td><td>all_layers</td></tr>
+    <tr><td>max pixels (×28²)</td><td>2000</td><td>1500</td><td>2000</td></tr>
+    <tr><td>init</td><td>Qwen2.5-VL-7B</td><td>S1 ckpt</td><td>S1 ckpt (<em>not</em> S2)</td></tr>
+    <tr><td>teacher</td><td>—</td><td>S1 ckpt w/ aux imgs</td><td>S2 ckpt (latent fwd)</td></tr>
+  </tbody>
+</table>
+<h2>RL / VLPO (paper Table 8 + <code>vlpo_train.sh</code>)</h2>
+<table class="hp-table">
+  <tr><td>lr</td><td>1e-6</td><td>Rollout N</td><td>8</td><td>σ</td><td>10.0</td></tr>
+  <tr><td>Global bsz</td><td>64</td><td>Temperature</td><td>0.5</td><td>K</td><td>10</td></tr>
+  <tr><td>Max prompt/response</td><td>4096</td><td>Acc threshold</td><td>0.6</td><td class="codeonly">KL coef</td><td class="codeonly">0.01</td></tr>
+  <tr><td>Data</td><td>3.2K Thyme-RL, 1ep</td><td>Reward</td><td>acc + format</td><td>Judge</td><td>Gemini 2.5 Pro</td></tr>
+</table>
+
+    </section>
+    <section data-id="hooks" data-source="14-hook-points-for-variation">
+      <a class="verify-link" href="#14-hook-points-for-variation" onclick="openSrc('14-hook-points-for-variation'); return false;">verify in source ↗</a>
+      
+<h2>Where to plug in a controlled variation — the action card</h2>
+<div class="hook-grid">
+  <div class="hook-card">
+    <p class="hk">H1</p>
+    <h4>Swap the alignment loss</h4>
+    <p>At <code>alignment_loss(...)</code>. <strong>VICReg</strong> drops the teacher: variance hinge + cov penalty self-supervised. <strong>Barlow Twins</strong> keeps teacher. <strong>InfoNCE</strong> needs negatives (awkward at bsz=1).</p>
+  </div>
+  <div class="hook-card">
+    <p class="hk">H2</p>
+    <h4>Swap the latent-only-BP surrogate</h4>
+    <p>At <code>compute_latents_only_loss</code>. Last-N-layer restriction, detached-MSE, grad-clip variants.</p>
+  </div>
+  <div class="hook-card">
+    <p class="hk">H3</p>
+    <h4>Replace the latent input embedding</h4>
+    <p>At <code>modeling:1914-1916</code>. VQ-VAE codebook, random-projection bottleneck, cross-attention pooling. <em>Load-bearing — comparison no longer apples-to-apples.</em></p>
+  </div>
+  <div class="hook-card">
+    <p class="hk">H4</p>
+    <h4>Replace the 4D mask policy</h4>
+    <p>At <code>build_4d_attn</code>. Toggle ten flags; <code>--not_use_4d</code> = useful baseline.</p>
+  </div>
+  <div class="hook-card hot">
+    <p class="hk">H5</p>
+    <h4>Per-position regularizer on latents</h4>
+    <p>Add to trainer between latent and CE forwards. Variance hinge + cov penalty on <code>ce_patch_vec[b]</code> — <strong>anti-collapse signal</strong>. <em>cluster/configs/v3_monet_plus_vicreg.yaml already wired.</em></p>
+  </div>
+  <div class="hook-card">
+    <p class="hk">H6</p>
+    <h4>Swap teacher choice</h4>
+    <p>Base Qwen vs S1-SFT vs 72B vs EMA-self. Our cluster port uses base Qwen (deviation #3); upstream uses S1-SFT.</p>
+  </div>
+  <div class="hook-card">
+    <p class="hk">H7</p>
+    <h4>Drop Stage 3 entirely</h4>
+    <p>Skip self-distill; keep Stage 2. Phase 0 suggests Stage 3 is the collapse source.</p>
+  </div>
+  <div class="hook-card">
+    <p class="hk">H8</p>
+    <h4>Add a latent-shape reward in RL</h4>
+    <p>Diversity bonus, decoder-utility bonus. Paper uses minimal acc + format only.</p>
+  </div>
+</div>
+
+    </section>
+    <section data-id="open" data-source="15-open-questions--future-directions-project-internal">
+      <a class="verify-link" href="#15-open-questions--future-directions-project-internal" onclick="openSrc('15-open-questions--future-directions-project-internal'); return false;">verify in source ↗</a>
+      
+<h2>Five open questions on the table</h2>
+<div class="oq-list">
+  <div class="oq">
+    <div class="qnum">Q1</div>
+    <p><strong>Does the deviation-#1 fix lift our Job B collapse?</strong></p>
+    <p class="meta">Pending: Job C step-1500 eval (Task #17/#18, unblock on local data path). Comparison: Job B = cos 0.840 / util -5.35 (collapsed); released S2 = cos 0.377 / util +2.05 (healthy).</p>
+  </div>
+  <div class="oq">
+    <div class="qnum">Q2</div>
+    <p><strong>Is our inline base-Qwen teacher materially worse than the S1-SFT teacher?</strong></p>
+    <p class="meta">Affects correctness of deviation #3. A/B test: same recipe with each teacher.</p>
+  </div>
+  <div class="oq">
+    <div class="qnum">Q3</div>
+    <p><strong>Does VICReg additive lift Stage 2 further?</strong></p>
+    <p class="meta">V3 config ready (<code>v3_monet_plus_vicreg.yaml</code>). Hypothesis: VICReg helped at 3B/5K (Pivot A); should help at 7B/118K — effect may be smaller given alignment already shapes structure.</p>
+  </div>
+  <div class="oq">
+    <div class="qnum">Q4</div>
+    <p><strong>Can we replace Stage 3 with a non-self-distill anti-collapse Stage 3?</strong></p>
+    <p class="meta">If Stage 3 collapses, drop it. Or replace its cosine-align-to-teacher with VICReg-on-latents.</p>
+  </div>
+  <div class="oq">
+    <div class="qnum">Q5</div>
+    <p><strong>What's the right σ for VLPO?</strong></p>
+    <p class="meta">Paper picks 10.0; no ablation. σ trades learning signal sharpness vs gradient stability. Out of scope for SFT-only roadmap but flag for future RL.</p>
+  </div>
+</div>
+
+    </section>
+  </div>
+</div>
+
+<div class="slide-footer">
+  Monet method report —
+  <a href="https://github.com/NOVAglow646/Monet" target="_blank">repo</a> ·
+  <a href="https://arxiv.org/abs/2511.21395" target="_blank">arXiv:2511.21395</a> ·
+  <a href="./monet_method.md" target="_blank">source .md (263a8d2a31c0)</a> ·
+  built 2026-05-20T17:59:31.774883Z
+</div>
+
+<aside id="sourcePane">
+  <div class="src-meta">
+    Verbatim source — <code>docs/monet/monet_method.md</code> (263a8d2a31c0, 1051 lines, built 2026-05-20T17:59:31.774883Z).
+    Numbers and claims here are this source's, verbatim.
+    <span style="float:right"><a href="./monet_method.md">raw ↗</a></span>
+  </div>
+  <div id="sourceBody">Loading source…</div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+
+<script>
+  // Embedded markdown source — verbatim copy of monet_method.md.
+  const MARKDOWN_SOURCE = "# Monet \u2014 Method Report\n\n**Operational reference for paper\u2194code alignment, code-only details, and hook points for controlled variation (e.g. VICReg).**\n\n| Field | Value |\n|---|---|\n| Paper | *Monet: Reasoning in Latent Visual Space Beyond Images and Language* |\n| Authors | Qixun Wang, Yang Shi, Yifei Wang, Yuanxing Zhang, Pengfei Wan, Kun Gai, Xianghua Ying, Yisen Wang (Peking U. + Kuaishou) |\n| arXiv | [2511.21395](https://arxiv.org/abs/2511.21395) (v1 26 Nov 2025; v2 27 Nov 2025) |\n| Venue | CVPR 2026 (accepted) |\n| Repo | https://github.com/NOVAglow646/Monet |\n| License | Top-level **unspecified** (only `RL/LICENSE` = Apache-2.0 inherited from EasyR1/verl). Verify before redistribution. |\n| HF model \u2014 SFT | https://huggingface.co/NOVAglow646/Monet-SFT-7B (K=8) |\n| HF model \u2014 RL | https://huggingface.co/NOVAglow646/Monet-7B (K=10) |\n| HF dataset | https://huggingface.co/datasets/NOVAglow646/Monet-SFT-125K |\n| Base model | Qwen2.5-VL-7B-Instruct (vision encoder frozen) |\n| Local artefacts | `phase0_monet_probe/monet_model/{modeling_qwen2_5_vl_monet.py,apply_qwen2_5_monet.py}`, `cluster/trainer_monet_stage2.py` (our port), `cluster/mask_utils.py` (our 4D mask reimpl) |\n\n---\n\n## 0. Executive summary\n\nMonet trains an MLLM to **think with latent embeddings** instead of images or words at inference time. The model autoregressively emits a block of `K` continuous vectors (the **latents**) inside its own decoder stream; each latent's input embedding is the previous step's last-layer hidden state (Coconut-style hidden-state feedback). The block sits between `<latent>` / `</latent>` brackets and is consumed by subsequent text tokens \u2014 no auxiliary images, no tool calls.\n\nThe contribution is a **3-stage SFT curriculum plus VLPO RL** that produces useful latents at inference time:\n\n| Stage | Aux images? | Latents? | Loss | What it teaches |\n|---|---|---|---|---|\n| 1 (warm-up) | yes (interleaved) | no (still text-only CoT) | NTP with emphasized-CE on `<observation>` tokens | Format \u2014 emit `<observation>...</observation>`, follow the CoT pattern. |\n| 2 (target latents) | yes (only seen by latents via 4D mask) | yes (K slots per aux-image position) | `NTP + \u03b1\u00b7L_align-obs`, with a **latent-only-BP surrogate** that routes the alignment gradient *only* into the latent-generation graph | Make latents carry the same per-layer information as the encoder-grounded teacher's observation tokens. |\n| 3 (inference-ready) | **no** (dropped from student) | yes | `NTP + \u03b2\u00b7L_align-latent` aligned to Stage-2 teacher latents (precomputed) | Reproduce Stage-2 latents from question context alone. |\n| RL (VLPO) | no | yes (K=10) | Group-relative policy optimization with a **Gaussian importance ratio** on latent slots; reward = accuracy + format | Refine. |\n\nThe four named technical contributions, in order of how much the ablations matter:\n\n1. **Latent-only backprop** (`compute_latents_only_loss`, `src/trainer.py:11-42`) \u2014 paper Eq. 9/10. Removing it crashes V\u2605 from 82.20 \u2192 46.07 (Table 2). This is the load-bearing trick. *\u00a75*.\n2. **All-layer alignment loss** (not just final-layer). Paper Sec. 3.2. *\u00a75.3*.\n3. **4D attention mask** so aux images are visible *only* to latent embeddings (not to subsequent text). `src/utils.py::build_4d_attn`. *\u00a73.3*.\n4. **VLPO**: PPO/GRPO variant with a Gaussian importance weight `exp(-||h_old - h_\u03b8||\u00b2 / 2\u03c3\u00b2)` for latent slots (which have no discrete `log\u03c0` to ratio). *\u00a77*.\n\nA frozen-reader internal probe (our `phase0_monet_probe`) finds that on the released checkpoint **Stage 2 latents are healthy** (mean off-diag cos \u2248 0.38, utility +2.2 nat to vanilla Qwen reader) but **Stage 3 collapses** (mean cos 0.87, positions 4\u20137 collinear, utility \u2248 0). This is consistent with Stage 3 being supervised against a *latent-of-a-latent* with no image grounding. See *\u00a713*.\n\n---\n\n## 1. Notation\n\n| Symbol | Meaning |\n|---|---|\n| `K` | Number of latent slots per `<latent>...</latent>` block. K = 8 in `Monet-SFT-7B`; K = 10 in `Monet-7B` (post-VLPO). |\n| `h^{(l)}_t` | Hidden state at layer `l`, sequence position `t`. |\n| `\u0125^{(i,l)}_{latent}` | Student's `l`-th layer hidden state at latent position `i`. |\n| `h*^{(i,l)}_{obs}` | Frozen teacher's `l`-th layer hidden state at observation position `i`. The teacher receives the same prompt **with aux images present**. |\n| `\u03b1`, `\u03b2` | Stage 2 / Stage 3 alignment weight. Both = 2.0 in paper. |\n| `\u03c3` | VLPO Gaussian std for latent importance ratio. \u03c3 = 10.0. |\n| Observation token | A token inside `<observation>...</observation>` that describes what the model \"sees\" in the aux image. CE loss is upweighted on these via `ce_emphasize_factor`. |\n\n---\n\n## 2. End-to-end pipeline overview\n\n```\n                       \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                       \u2502  Monet-SFT-125K  (118K Visual-CoT + \u2026)      \u2502\n                       \u2502   each ex: question, image, CoT with        \u2502\n                       \u2502   <observation>\u2026</observation> and          \u2502\n                       \u2502   <abs_vis_token>\u2026</abs_vis_token> markers  \u2502\n                       \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                                          \u2502\n              \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n              \u25bc                                                          \u2502\n  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510                                          \u2502\n  \u2502 Stage 1: warm-up           \u2502                                         \u2502\n  \u2502  loss = NTP w/ ce_emph 2.0 \u2502  (8\u00d7H100, 4 epochs, bs=1, gas=16)       \u2502\n  \u2502  init from Qwen2.5-VL-7B   \u2502                                         \u2502\n  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                                          \u2502\n              \u2502                                                          \u2502\n              \u25bc                                                          \u2502\n  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    precompute_teacher_reps.py            \u2502\n  \u2502 Stage 2: target latents    \u2502 \u25c0\u2500\u2500 caches teacher hidden states         \u2502\n  \u2502  loss = NTP + \u03b1\u00b7align_obs  \u2502     (all layers, observation tokens,    \u2502\n  \u2502   via latent-only-BP       \u2502      from Stage-1 ckpt w/ aux images)   \u2502\n  \u2502  init from Stage 1 ckpt    \u2502                                         \u2502\n  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                                          \u2502\n              \u2502                                                          \u2502\n              \u2502  this is `Monet-SFT-7B` on HF (K=8)                      \u2502\n              \u25bc                                                          \u2502\n  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    precompute_teacher_latents.py         \u2502\n  \u2502 Stage 3: drop aux images   \u2502 \u25c0\u2500\u2500 caches Stage-2 teacher's latent      \u2502\n  \u2502  loss = NTP + \u03b2\u00b7align_lat  \u2502     hidden states (the \"latent-of-a-    \u2502\n  \u2502  init from Stage 1 ckpt    \u2502      latent\" supervision target)         \u2502\n  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                                          \u2502\n              \u2502                                                          \u2502\n              \u25bc                                                          \u2502\n  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510                                   \u2502\n  \u2502 RL (VLPO) on Thyme-RL (3.2K)     \u2502   K = 10, \u03c3 = 10.0, KL = 0.01     \u2502\n  \u2502  reward = accuracy + format      \u2502   `verl` framework fork           \u2502\n  \u2502  importance ratio: Gaussian      \u2502                                   \u2502\n  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                                   \u2502\n              \u2502                                                          \u2502\n              \u25bc                                                          \u25bc\n                       \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                       \u2502  Inference: custom vLLM gpu_model_  \u2502\n                       \u2502  runner; on <latent>, feed previous \u2502\n                       \u2502  last-hidden-state as next input    \u2502\n                       \u2502  embedding for K steps, then </>    \u2502\n                       \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n**Two conda environments are mandatory.** The SFT stack (`monet`, Python 3.10) and the RL stack (`easyr1`, Python 3.11) have incompatible `transformers` + `vllm` pins; switching is not optional. The vLLM-inference patch ships separately under `inference/`. See *\u00a73.6*.\n\n**Module-level monkey-patching.** Both `monet_qwen_model/apply_qwen2_5_monet.py` and `inference/apply_vllm_monet.py` (and our `cluster/trainer_monet_stage2.py:60-89`) mutate `sys.modules` *before* any `import transformers`. Any later `from transformers.models.qwen2_5_vl import \u2026` silently gets the Monet variant. This is brittle in shared processes; debug accordingly.\n\n---\n\n## 3. Architecture (modified Qwen2.5-VL)\n\nAll architectural changes live in **`modeling_qwen2_5_vl_monet.py`** (vendored at `phase0_monet_probe/monet_model/`). The vanilla Qwen2.5-VL class is preserved; the modifications are additive \u2014 they activate only when specific forward kwargs are present.\n\n### 3.1 Output dataclasses\n\nTwo `ModelOutput` subclasses are extended:\n\n`Qwen2_5_VLModelOutputWithPast` (model-level, `modeling_qwen2_5_vl_monet.py:733-752`) adds:\n\n```python\nce_patch_pos:   Optional[List[List[int]]]      # positions of latent tokens in input_ids\nce_patch_vec:   Optional[List[torch.Tensor]]   # the K latent embeddings, batched as list-of-tensors\nalignment_loss: Optional[torch.FloatTensor]    # accumulated alignment loss (latent-mode only)\n```\n\n`Qwen2_5_VLCausalLMOutputWithPast` (CausalLM-level, `modeling_qwen2_5_vl_monet.py:2079-2106`) further adds `alignment_poss`, `latent_embeds` (extracted last-layer states at latent positions when `output_latent_embeds=True`), `mean_emphasize_acc`, `loss_dict` (e.g. `{'ce': ..., 'alignment': ...}`).\n\n**These extra fields are why our `compute_latents_only_loss` port works**: `outputs.ce_patch_vec` from the latent forward is a list of leaf-ish tensors that have a fresh autograd graph to the CE forward; passing them as `inputs` to `torch.autograd.grad` is well-defined.\n\n### 3.2 Forward signature additions\n\nBoth `Qwen2_5_VLModel.forward` and `Qwen2_5_VLForConditionalGeneration.forward` accept (all optional, all default to `None` or `[]`):\n\n| Kwarg | Type | Used in | What it does |\n|---|---|---|---|\n| `latent_mode` | `bool` | latent forward | Switches into the segment-wise autoregressive latent-generation loop. |\n| `alignment_poss` | `List[List[int]]` | latent mode (S2/S3) | Per-batch positions where alignment loss is computed (observation tokens in S2; latent positions in S3). |\n| `teacher_hidden_states_for_alignment` | `List[Tensor]` | latent mode | Pre-loaded teacher reps; shape `[L_layers, N_align, H]` for all-layer or `[N_align, H]` / `[H]` for last-layer. |\n| `ce_patch_pos` | `List[List[int]]` | non-latent CE forward | Where in `inputs_embeds` to splice latents. |\n| `ce_patch_vec` | `List[Tensor]` | non-latent CE forward | The latents (from the prior latent forward) to splice. |\n| `ce_emphasize_factor` | `float` | both | CE-loss weight multiplier at `ce_emphasize_poss` (default 1.0). |\n| `ce_emphasize_poss` | `List[List[int]]` | both | Token positions to upweight in the CE loss (= observation-token positions). |\n| `loss_type` | `List[str]` | both | Subset of `{'ce', 'alignment'}`. Empty list = no loss (used for the latent-only \"generate latents\" forward). |\n| `attention_mask_4d` | `Dict[str, Tensor]` | both | Pre-built 4D mask in `{\"full_attention\": [B,1,L,L]}` form. Bypasses the standard causal mask. |\n| `output_latent_embeds` | `bool` | latent mode | Returns extracted last-hidden-state at `alignment_poss` (for probing/inference latent extraction). |\n| `compute_emphasize_acc` | `bool` | non-latent CE | Per-token accuracy logging on emphasized positions. |\n\n### 3.3 The latent forward (`latent_mode=True`)\n\n`modeling_qwen2_5_vl_monet.py:1720-1973`. **Batch size 1 only is tested upstream** (in-code warning at L1745). The forward iterates per-sample:\n\n1. Find latent positions: `(input_ids[b] == config.latent_token_id).nonzero()` (`L1735-1738`).\n2. Forward the **pre-answer segment** (everything before `<|im_start|>assistant`), saving `past_key_values` (`L1771-1788`).\n3. For each gap between latent positions:\n   a. Forward the **text/image sub-segment**, optionally computing alignment on all observation tokens in this segment by stacking student hidden states across all layers (`L1851-1870`).\n   b. Forward the **image tail** (continuous `<|image_pad|>` tokens before the next latent block) *without* the 4D mask, to save memory (`L1878-1893`). Alignment pointers skip indices inside the image tail.\n4. For each latent position `pos`:\n   - If `pos == 0`: input embedding = `latent_init_embedding` (an attribute set on the model) or **zero** (`L1906-1913`). This is rare in practice \u2014 latent positions are never first in Monet's training data.\n   - Else: input embedding = **previous token's last-layer hidden state**, cloned in train / detached in eval (`L1914-1916`). This is the *hidden-state feedback*. The position is appended to `ce_patch_pos[b]` and the embedding to `ce_patch_vec[b]`.\n   - Run a single-step `language_model` forward (`L1922-1934`). KV cache is propagated; `output_hidden_states=True` (needed for all-layer alignment in S3).\n   - In S3 (latent-position alignment), accumulate `alignment_loss(teacher_hidden_states_for_alignment[b][:, align_ptr, :], step_out.hidden_states)` (`L1939-1949`).\n\n**Three things to know about the latent forward.**\n\n- The latent's input embedding is **detached** from the autograd graph that *produced* the previous hidden state (`.detach()` at L1924). So gradient does not flow latent\u2192latent through input-embedding feedback; only the model parameters via the language model's forward propagate the signal. The graph used by `compute_latents_only_loss` is the *one-step LM forward* that processes this detached latent embedding.\n- `ce_patch_vec[b]` holds the latent embeddings as they came out of the previous step (with grad attached to all upstream params). These are the leaves that `torch.autograd.grad` will be called on later.\n- Past-KV is **not** detached across latent steps within a sample, so each latent's forward sees the full history.\n\n### 3.4 The non-latent CE forward (`latent_mode=False`)\n\n`modeling_qwen2_5_vl_monet.py:1985-2070`. This is a near-vanilla Qwen2.5-VL forward with two extras:\n\n```python\n# L2006-2013: splice latents into inputs_embeds\nif ce_patch_pos is not None and ce_patch_vec is not None:\n    for b in range(len(ce_patch_pos)):\n        pos_list = ce_patch_pos[b]\n        if not pos_list:\n            continue\n        vecs = ce_patch_vec[b].to(inputs_embeds.device, inputs_embeds.dtype)\n        inputs_embeds[b, torch.tensor(pos_list, device=\u2026, dtype=torch.long), :] = vecs\n```\n\n```python\n# L2048-2057: all-layer cosine alignment if 'alignment' in loss_type\nif \"alignment\" in kwargs.get('loss_type', {}):\n    all_student_hidden_states = torch.stack(outputs.hidden_states, dim=0)\n    for b in range(batch_size):\n        student_hidden_states = all_student_hidden_states[:, b, alignment_poss[b], :]\n        total_align_loss += alignment_loss(\n            teacher_hidden_states_for_alignment[b],\n            student_hidden_states,\n        )\n    total_align_loss /= batch_size\n```\n\n**This splice is the only place where `ce_patch_vec` is graph-connected to the alignment loss.** When the trainer later calls `torch.autograd.grad(L_align, ce_patch_vec)` (inside `compute_latents_only_loss`), the path is: `ce_patch_vec \u2192 inputs_embeds \u2192 language_model \u2192 hidden_states \u2192 alignment_loss`. Without this splice, `ce_patch_vec` would be a leaf with no downstream consumer, and `allow_unused=True` would silently return `None` \u2192 zero grad \u2192 no-op. (Our smoke gate `[devfix-check] latent_only_connected=True` exists exactly to catch this regression.)\n\nWeighted CE for emphasized tokens lives at `L2273-2304`:\n\n```python\nuse_weight = (ce_emphasize_poss is not None and isinstance(ce_emphasize_poss, (list, tuple))\n              and len(ce_emphasize_poss) > 0 and float(ce_emphasize_factor) != 1.0)\nif use_weight:\n    ce_flat = F.cross_entropy(logits_flat, shift_labels_flat, reduction='none', ignore_index=-100)\n    weight = torch.ones_like(ce)\n    for b, poss in enumerate(ce_emphasize_poss):\n        if not poss: continue\n        weight[b, torch.tensor(poss) - 1] = float(ce_emphasize_factor)\n    valid = (shift_labels != -100).float()\n    loss = (ce * weight * valid).sum() / (weight * valid).sum().clamp_min(1.0)\nelse:\n    loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size)\n```\n\nNote `poss - 1`: weights are placed on the **predictor** of the emphasized token (shifted labels).\n\n### 3.5 Custom 4D attention mask\n\nUpstream `src/utils.py::build_4d_attn` is heavy (\u2248 150 lines, ten boolean flags). It builds a `[B, 1, L, L]` boolean (or additive `large_neg`) mask that, *on top of standard causal*, enforces a directed-acyclic information flow:\n\n- The **question image** is visible to everyone (default).\n- An **aux image** in step `i` (between `<|vision_start|>\u2026<|vision_end|>`) is visible **only to the latent block in step `i`** (between `<abs_vis_token>\u2026</abs_vis_token>`). It is hidden from observation tokens, downstream text, and other steps.\n- The **latent block** in step `i` is causal w.r.t. itself; it sees the question image, prior latent blocks (if `latent_can_see_all_previous=True`, the default), and its own aux image.\n- **Observation tokens** are causal w.r.t. themselves; depending on flags they can see only image tokens, only latent tokens, only question+latents, etc. Default Monet usage: they attend everything causal (no `observation_tokens_only_see_*` flag on).\n\nThe \"wo_helper_images\" variant (`build_4d_attn_wo_helper_images`, no aux images present) is what Stage 3 + inference use; it only enforces `mask_latent` (optional: hide latents from subsequent text).\n\n**Our cluster reimplementation** at `cluster/mask_utils.py::build_monet_4d_attn` is simpler \u2014 Phase 1.5b data has no helper images and no `<observation>` blocks, so we use the `wo_helper_images` path with `latent_cross_isolate=True, mask_latent=False`. The mask test in `phase1_5b_attn/MASK_VALIDATION.md` validated equivalence on tested cases. *This is one of our three named code-level deviations* (cluster trainer header `trainer_monet_stage2.py:30-46`).\n\n### 3.6 Custom generation\n\nVanilla Qwen2.5-VL inherits `generate` from `GenerationMixin`. Monet overrides only `prepare_inputs_for_generation` (`modeling_qwen2_5_vl_monet.py:2369-2437`):\n- Recomputes 4D rope deltas only on pre-fill, caches them, returns 4-D position IDs (text-only positions prepended to 3D vision positions).\n- **Nullifies pixel_values during decoding** (`if cache_position[0] != 0: model_inputs[\"pixel_values\"] = None`).\n\nCritically, the model has **no special handling to *generate* latent tokens itself** \u2014 during HF generation, `<latent>` is just a token. To actually run latent decoding you must use the vLLM patch (see *\u00a79*). This is why our internal-probe path uses `latent_mode=True` + `output_latent_embeds=True` rather than `generate`.\n\n---\n\n## 4. Data pipeline\n\n### 4.1 Special tokens\n\nAdded in `src/main.py::run` via `tokenizer.add_special_tokens`:\n\n| Token | Role |\n|---|---|\n| `<abs_vis_token>` | Opens a latent block (one per aux image in source CoT). |\n| `</abs_vis_token>` | Closes a latent block. |\n| `<abs_vis_token_pad>` | Padding inside the latent block. There are exactly `K` of these between the open/close brackets in training data. |\n| `<observation>` / `</observation>` | Wraps text that \"describes what's in the aux image\"; used as CE-emphasized positions and (optionally) Stage-2 alignment positions. |\n| `<latent>` / `</latent>` | **Inference-time** rename of `<abs_vis_token>` / `</abs_vis_token>`. The inference example regex-replaces in displayed output. Token IDs hard-coded: 151666 / 151667. |\n\nHard-coded token IDs `LATENT_START_ID=151666` and `LATENT_END_ID=151667` are read from env vars by both the model (`modeling_qwen2_5_vl_monet.py`) and the vLLM runner; **they must match the trained tokenizer**.\n\n### 4.2 Training-data preprocessing\n\nThe pipeline is in `src/utils.py` + `src/task.py`. Key helpers (all verbatim in our notes):\n\n- `replace_latent_placeholder_with_img_pad` \u2014 in **teacher** forward, replaces every `<abs_vis_token></abs_vis_token>` in assistant turns back into `<|vision_start|><|image_pad|><|vision_end|>` so the teacher sees the actual aux image.\n- `replace_img_pad_with_latent_pad` \u2014 in **student** forward, replaces every `<|vision_start|><|image_pad|><|vision_end|>` in assistant turns with `<abs_vis_token>{<abs_vis_token_pad> \u00d7 K}</abs_vis_token>` so the student has K latent slots where the aux image used to be.\n- `strip_observation_and_track_retokenized` \u2014 strips `<observation>...</observation>` from the visible text but tracks the *retokenized* positions of where the observation content lay, so CE-emphasize and alignment-position bookkeeping survive de-tagging.\n- `generate_labels_after_multi_token_start` \u2014 sets labels = -100 for everything up to and including the first `<|im_start|>assistant` subsequence (only train on the assistant turn).\n- `find_segments_1d` / `find_segments_1d_wo_helper_images` \u2014 segments the input_ids into `(I_idx, A_idx, O_blocks)` triplets per reasoning step (I = aux image tokens, A = latent block, O = observation blocks). Used by `build_4d_attn`.\n- `resize_by_token_budget` \u2014 clamps total image tokens (across all images in the example) to budget. Stage 1/3 budget = `2000 \u00d7 28\u00b2`; Stage 2 budget = `1500 \u00d7 28\u00b2`.\n\n### 4.3 Datasets\n\n**Monet-SFT-125K** (paper Table 1):\n\n| Dataset | Domain | Size |\n|---|---|---|\n| Visual-CoT | Multi-domain (118K) | 118.6K |\n| CogCoM | Real-world + chart | 0.5K |\n| ReFocus | Chart | 0.4K |\n| Zebra-CoT visual | Visual search | 2.7K |\n| Zebra-CoT count | Counting | 2.9K |\n| Zebra-CoT geometry | Geometry | 0.1K |\n| **Total** | | **125.2K** |\n\nAll six are loaded into Stage 1, 2, and 3 (same multi-data list in every script).\n\n**RL data**: 3.2K subset of [Thyme-RL](https://huggingface.co/datasets/thyme-rl), one epoch. **Not** Monet-SFT-125K. Reward judging uses a rule-based judge (Gemini 2.5 Pro by default per `RL/examples/config_monet.yaml`).\n\n---\n\n## 5. Stage 2 \u2014 the load-bearing stage\n\n### 5.1 Paper text\n\n> *\"During Stage 2 training, both the teacher and student models are initialized from the Stage 1 checkpoint. \u2026 The teacher processes auxiliary images alongside text; the student processes the same prompt but with auxiliary images replaced by `K` latent slots. To make the latents carry the same per-layer information as the teacher's observation tokens, we add an alignment loss (Eq. 1) over all transformer layers.\"* \u2014 Sec. 3.2\n\n**Stage-2 objective** (Eq. 3):\n\n$$\\mathcal{L}_{\\text{stage2}} = \\mathcal{L}_{\\text{NTP}} + \\alpha \\cdot \\mathcal{L}_{\\text{align-obs}}, \\quad \\alpha = 2.0$$\n\n**Alignment-obs loss** (Eq. 1):\n\n$$\\mathcal{L}_{\\text{align-obs}} = \\frac{1}{N}\\sum_i \\sum_l \\big[1 - \\cos\\big(\\text{stop\\_grad}(h^{*\\,(i,l)}_{\\text{obs}}),\\; \\hat h^{(i,l)}_{\\text{obs}}\\big)\\big]$$\n\nwhere the sum is over **observation-token positions `i`** and **all transformer layers `l`**, and the teacher hidden state is `.detach()`'d.\n\n### 5.2 The latent-only backprop trick\n\n**Paper Eq. 9** (the loss actually optimized):\n\n$$\\mathcal{L}'_{\\text{align-obs}} = \\frac{1}{N}\\sum_i \\text{stop\\_grad}\\!\\bigg(\\frac{\\partial \\mathcal{L}_{\\text{align-obs}}}{\\partial \\hat h^{(i,L)}_{\\text{latent}}}\\bigg)^{\\!\\top}\\; \\hat h^{(i,L)}_{\\text{latent}}$$\n\n**Paper Eq. 10** (resulting gradient flow):\n\n$$\\frac{\\partial \\mathcal{L}'_{\\text{align-obs}}}{\\partial \\theta} = \\bigg(\\frac{\\partial \\mathcal{L}_{\\text{align-obs}}}{\\partial \\hat h^{(i,L)}_{\\text{latent}}}\\bigg)\\;\\bigg(\\frac{\\partial \\hat h^{(i,L)}_{\\text{latent}}}{\\partial \\theta}\\bigg)$$\n\n> *\"By differentiating this surrogate loss, gradients flow only through the generated latent embeddings to the model parameters.\"*\n\n**Why**: a naive `L_align-obs.backward()` flows gradient through *both* the latent-generation graph (good \u2014 that's what we want to train) and the rest of the LM trunk (bad \u2014 the LM trunk is already CE-trained, and the alignment signal would push it to compensate for the latent miss). The surrogate isolates the gradient to only the path `\u03b8 \u2192 \u0125_{latent} \u2192 \u2026 \u2192 L_align`, effectively treating `\u0125_{obs}` (downstream of `\u0125_{latent}`) as the only \"differentiable observable.\"\n\n**Code** (upstream `src/trainer.py:11-42`, verbatim):\n\n```python\ndef compute_latents_only_loss(latents, loss_for_latents):\n    \"\"\"\n    Compute a loss that backpropagates only through the latent embeddings `latents`.\n    \"\"\"\n    def _flatten_tensors(x):\n        if isinstance(x, (list, tuple)):\n            out = []\n            for y in x:\n                out.extend(_flatten_tensors(y))\n            return out\n        return [x]\n\n    ce_vec_list = _flatten_tensors(latents)\n    grads = torch.autograd.grad(\n        outputs=loss_for_latents,\n        inputs=ce_vec_list,\n        retain_graph=True,\n        create_graph=False,\n        allow_unused=True,\n    )\n    safe_grads = [g.detach() if g is not None else torch.zeros_like(v)\n                  for v, g in zip(ce_vec_list, grads)]\n    proxy_loss = torch.stack(\n        [(v * g).sum() for v, g in zip(ce_vec_list, safe_grads)]\n    ).sum()\n    return proxy_loss\n```\n\nThe scalar value of `proxy_loss` is meaningless (it's `\u03a3 v\u1d40 g`, which can be any sign and oscillates wildly). Only its **gradient w.r.t. parameters** matters. We learned this the hard way: a `tot` log line oscillating \u00b1100 is the expected cosmetic signature of the technique, not divergence. Use `ce` and `align` as the interpretable training signals.\n\n**Caveat: `allow_unused=True`**. If `ce_vec_list` happens to contain a tensor with no path to `loss_for_latents` (e.g. because the trainer forgot to do the CE forward with `ce_patch_vec=\u2026`), the grad is silently `None` \u2192 replaced with zero \u2192 `proxy_loss = 0`. This makes the whole stage a no-op without any error. Hence our smoke gate `[devfix-check] latent_only_connected=True` which fails the run at step ~10 if the grad is all-zero. We hit this exact failure mode in Job B (our first Stage 2 attempt without the verbatim port).\n\n### 5.3 All-layer alignment loss\n\n`modeling_qwen2_5_vl_monet.py:244-250`:\n\n```python\ndef alignment_loss(teacher_hidden_states, student_hidden_states):\n    if teacher_hidden_states.dim() == 3:   # all-layer: [num_layers, num_align, dim]\n        return (1 - F.cosine_similarity(\n            teacher_hidden_states.to(student_hidden_states.device),\n            student_hidden_states,\n        )).mean()\n    elif teacher_hidden_states.dim() == 1:   # last-layer-only fallback\n        return 1 - F.cosine_similarity(student_hidden_states, teacher_hidden_states, 0)\n```\n\nTwo reductions are used:\n- **3-D teacher** (S2 default and S3 `--alignment_layer all_layers`): mean over (layer, position, dim) of `1 - cos`.\n- **1-D teacher** (S3 last-layer-only): plain cosine distance.\n\nPaper explicitly notes the **all-layer** choice as a deviation from prior latent-CoT work (which aligned only the final layer). The `--alignment_layer last_layer` switch exists upstream but isn't used in either shipped script \u2014 every `script_examples/*.sh` sets `--alignment_layer all_layers`.\n\n### 5.4 Trainer assembly\n\nUpstream `src/trainer.py::CustomTrainerSFT_STAGE2.compute_loss` (lines 142-211), verbatim assembly:\n\n```python\n# Latent forward (no loss, just generate ce_patch_vec/pos)\ninputs['latent_mode'] = True\ninputs['loss_type'] = []\nmodel.gradient_checkpointing_disable()        # use_cache=True is on in latent forward\noutputs = model(**inputs, return_dict=True, output_hidden_states=False)\n\n# CE forward (with alignment if \u03b1 \u2260 0)\nmodel.gradient_checkpointing_enable(gradient_checkpointing_kwargs={\"use_reentrant\": False})\ninputs['latent_mode']      = False\ninputs['ce_patch_pos']     = outputs.ce_patch_pos\ninputs['ce_patch_vec']     = outputs.ce_patch_vec\ninputs['ce_emphasize_poss']= inputs['observation_poss']\ninputs['ce_emphasize_factor']= self.ce_emphasize_factor\ninputs['loss_type']        = ['ce'] + (['alignment'] if self.args.alignment_weight != 0 else [])\ninputs['compute_emphasize_acc'] = True\n\nif self.args.alignment_weight != 0:\n    teacher_reps = load_offline_tensor(self.args.teacher_reps_dir,\n                                       batch_metadata=inputs['metadata'],\n                                       alignment_layer=self.args.alignment_layer)\n    inputs['alignment_poss'] = inputs['observation_poss']\n    inputs['teacher_hidden_states_for_alignment'] = teacher_reps\n\nteacher_ce_loss, teacher_output = super().compute_loss(model, inputs, return_outputs=True, \u2026)\nalignment_loss = teacher_output.loss_dict.get('alignment', torch.tensor(0.0))\n\nif self.args.emphasize_latent_weight != 0.0 and alignment_loss.item() != 0.0:\n    latent_only_loss = compute_latents_only_loss(\n        outputs.ce_patch_vec, self.args.alignment_weight * alignment_loss\n    )\n    loss = self.args.emphasize_latent_weight * latent_only_loss + teacher_ce_loss\nelse:\n    loss = teacher_ce_loss + self.args.alignment_weight * alignment_loss\n```\n\n**Key observations from the code that are not in the paper**:\n\n1. `emphasize_latent_weight` and `alignment_weight` are **two distinct knobs**. The shipped script sets both to 2.0; paper Table 7 lists only `\u03b1 = \u03b2 = 2.0`. `emphasize_latent_weight` gates the surrogate-vs-naive switch.\n2. The `if alignment_loss.item() != 0.0` guard means **for the first few steps where alignment happens to be ~0** (rare in practice but possible) the trainer silently falls back to the naive `ce + \u03b1\u00b7align` path. Our port preserves this.\n3. The CE forward uses `loss_type=['ce', 'alignment']` *both* \u2014 so the model returns a `loss_dict` with both keys. The trainer takes `loss` (=CE) directly and grabs alignment from `loss_dict['alignment']`. This is why the alignment loss is computable from the CE forward graph (necessary for the surrogate to work).\n4. `gradient_checkpointing` is **toggled around the latent forward**: disabled for the latent forward (which uses `use_cache=True` \u2014 incompatible with checkpointing), re-enabled for the CE forward.\n5. The teacher representation is **loaded from disk** (`load_offline_tensor`), produced by an earlier `precompute_teacher_reps.py` run that does a single forward of the Stage-1 checkpoint with aux images on every Visual-CoT example and dumps per-sample `.pt` files. Naming: `rep_{alignment_layer}_{dataset_name}_{sample_id}.pt`, containing `{\"latent\": Tensor[L_layers, N_align, H]}`.\n\n### 5.5 Stage 2 \u2014 paper \u2194 code agreement and deviations\n\n| Item | Paper | Upstream code | Our cluster port | Status |\n|---|---|---|---|---|\n| Loss form | Eq. 3: NTP + \u03b1\u00b7L_align-obs | `loss = teacher_ce_loss + \u03b1\u00b7alignment_loss` (fallback) **OR** `loss = \u03b2\u00b7latent_only_loss + teacher_ce_loss` when `emphasize_latent_weight != 0` | Same conditional structure (verbatim port as of Job C) | \u2713 Agree |\n| \u03b1 (alignment_weight) | 2.0 | `sft_stage2.sh: --alignment_weight 2.0` | 2.0 | \u2713 |\n| Latent-only backprop | Eq. 9/10 | `compute_latents_only_loss` (src/trainer.py:11-42) | Verbatim port (cluster `trainer_monet_stage2.py`) | \u2713 |\n| `ce_emphasize_factor` | not in main text | `sft_stage2.sh: --ce_emphasize_factor 4.0` (note: Stage 1 uses 2.0) | 4.0 | \u2713 |\n| `emphasize_latent_weight` | not named in paper | `sft_stage2.sh: --emphasize_latent_weight 2.0` | 2.0 | \u2713 |\n| Alignment positions | \"observation tokens\" | `inputs['alignment_poss'] = inputs['observation_poss']` | Same | \u2713 |\n| Alignment layers | \"all layers\" | `--alignment_layer all_layers` | `all_layers` | \u2713 |\n| Latent size K | \"8, 10, 12\" mentioned | Released SFT ckpt = 8 (`sft_stage2.sh: --latent_size 8`) | 8 | \u2713 |\n| Teacher hidden states | \"frozen teacher with aux images\" | Pre-computed offline via `precompute_teacher_reps.py` | **Inline forward, on-the-fly** (deviation #3 below) | \u25b3 Functional but not byte-identical |\n| 4D attention mask | \"aux images visible only to latents\" | `build_4d_attn` with ten flags (default: all observation flags off) | `build_monet_4d_attn` (no helper images, simpler logic) | \u25b3 Equivalent on tested data |\n| Training steps | 1000 (\u2248 1 epoch) | Script: `--epochs 2` = ~1844 steps | 2000 steps (budget) | \u25b3 More epochs than paper |\n| Batch size | bs=1, gas=16 (eff=8 ranks) | Same | bs=2 \u00d7 4 GPUs \u00d7 gas=16 = eff_bsz 128 | \u25b3 Smaller effective bsz upstream (16 vs 128) on a different cluster shape |\n| Image budget | 1500\u00b728\u00b2 per Stage 2 | Same | 784000 max pixels (matches 1500\u00b728\u00b2\u00b7ish) | \u2713 |\n| init | from Stage 1 ckpt | Same | Same | \u2713 |\n| Gradient checkpointing toggle | not mentioned | `disable\u2192latent\u2192enable\u2192CE` | Same | \u2713 |\n\n**The three named deviations in our cluster port** (header of `cluster/trainer_monet_stage2.py:30-46`):\n\n1. **(Job B \u2192 Job C: FIXED)** Latent-only backprop. Job B did `total = ce + \u03b1\u00b7align + emphasize\u00b7align` \u2014 a plain scalar add \u2014 which back-propagated alignment through the *entire* LM trunk. Job B step-1500 mean cos = 0.840 / util = -5.35 (collapsed). Job C uses the verbatim port; step-1500 evaluation pending (Task #17/#18).\n2. **4D attention mask** \u2014 `cluster/mask_utils.py` is a constrained re-implementation (no helper-image case, no `<observation>` blocks) of upstream `build_4d_attn_wo_helper_images`. Validated on Phase 1.5b data only.\n3. **Inline teacher forward** \u2014 instead of pre-computing per-sample `.pt` files (\u2248 480 GB at bf16 for 118K samples), we run the teacher (vanilla Qwen2.5-VL-7B-Instruct, **not** Stage-1-SFT) inline in `torch.inference_mode()`. Adds ~14 GB resident per rank, saves ~4 hours upfront. **Note**: upstream's teacher is the *Stage-1 SFT checkpoint*, ours is *base Qwen2.5-VL-7B-Instruct* \u2014 this is a non-trivial difference. See *\u00a713.2*.\n\n---\n\n## 6. Stage 1 \u2014 warm-up\n\n### 6.1 Paper text\n\n> *\"Stage 1 is a vanilla SFT on interleaved image-text CoTs that initializes the model from Qwen2.5-VL-7B-Instruct and teaches it to emit the `<observation>` tags fluently. No latents are generated yet \u2014 auxiliary image positions are filled with actual aux images, not latent slots.\"*\n\n### 6.2 Code\n\n`script_examples/sft_stage1.sh`:\n\n```bash\nCE_EMPHASIZE_FACTOR=2.0\ntorchrun --nproc-per-node=8 -m src.main \\\n  --epochs 4 \\\n  --bsz 1 --grad_accum_steps 16 \\\n  --stage sft_stage1 \\\n  --data_path  ./Monet-SFT-125K/{Visual_CoT,CogCoM,ReFocus,Zebra_CoT_count,Zebra_CoT_visual_search,Zebra_CoT_geometry}/train.json \\\n  --load_model_path Qwen2.5-VL-7B-Instruct \\\n  --deepspeed ./deepspeed/ds_zero2_gpu.json \\\n  --ce_emphasize_factor 2.0\n```\n\n`CustomTrainerSFT_STAGE1.compute_loss` (`src/trainer.py:67-103`):\n\n```python\ninputs['latent_mode']        = False\ninputs['input_ids']          = inputs['teacher_input_ids']      # aux images present\ninputs['ce_emphasize_poss']  = inputs['teacher_observation_poss']\ninputs['ce_emphasize_factor']= self.args.ce_emphasize_factor    # 2.0\ninputs['loss_type']          = ['ce']\ninputs['compute_emphasize_acc'] = True\nce_loss, outputs = super().compute_loss(model, inputs, return_outputs=True, \u2026)\nreturn ce_loss\n```\n\n### 6.3 Paper \u2194 code\n\n| Item | Paper | Code | Status |\n|---|---|---|---|\n| Objective | NTP | `loss_type=['ce']` | \u2713 |\n| ce_emphasize_factor | \"emphasized CE on observation tokens\" | 2.0 (vs Stage 2's 4.0) | \u2713 |\n| Aux images | present | `teacher_input_ids` (= raw, no latent slots) | \u2713 |\n| Steps | 3885 (3 epochs in paper Table 7) | `--epochs 4` in shipped script | \u25b3 Off by one epoch |\n| Init | Qwen2.5-VL-7B-Instruct | Same | \u2713 |\n\nMostly straightforward. The **Table 7 vs script disagreement** on epochs (3 vs 4) is consistent across all three stages \u2014 paper rounds to a tidy \"~1-3 epoch\" claim while shipped scripts use `--epochs {4,2,2}` for stages 1/2/3. Treat the released `Monet-SFT-7B` checkpoint as authoritative.\n\n---\n\n## 7. Stage 3 \u2014 latents without aux images\n\n### 7.1 Paper text\n\n> *\"Stage 3 trains the model to generate latents from question context alone \u2014 without auxiliary images at the student input. The model is re-initialized from the warm-up Stage 1 checkpoint. Supervision: align student latent embeddings to Stage-2 teacher latent embeddings, over all layers.\"*\n\n### 7.2 Loss\n\nEq. 5:\n\n$$\\mathcal{L}_{\\text{stage3}} = \\mathcal{L}_{\\text{NTP}} + \\beta \\cdot \\mathcal{L}_{\\text{align-latent}}, \\quad \\beta = 2.0$$\n\nEq. 4:\n\n$$\\mathcal{L}_{\\text{align-latent}} = \\frac{1}{N}\\sum_i \\sum_l \\big[1 - \\cos\\big(\\text{stop\\_grad}(h^{*\\,(i,l)}_{\\text{latent}}),\\; \\hat h^{(i,l)}_{\\text{latent}}\\big)\\big]$$\n\nSame form as Stage 2, but aligning at **latent positions** instead of observation positions, and the teacher is the **Stage-2 model**, not Stage-1.\n\n### 7.3 Trainer\n\n`CustomTrainerSFT_STAGE3.compute_loss` (`src/trainer.py:295-372`):\n\n```python\nteacher_latents = load_offline_tensor(\n    self.teacher_latent_dir, batch_metadata=inputs['metadata'],\n    alignment_layer=self.args.alignment_layer, rep_type=\"latent\",\n)\n\n# Latent forward \u2014 student inputs use the no-aux-image variant\ninputs['latent_mode']     = True\ninputs['input_ids']       = inputs['student_input_ids']      # aux images STRIPPED\ninputs['attention_mask']  = inputs['student_attention_mask']\ninputs['alignment_poss']  = inputs['student_alignment_poss']  # latent positions\ninputs['teacher_hidden_states_for_alignment'] = teacher_latents\ninputs['loss_type']       = []\nstudent_outputs_latent = model(**inputs)\n\n# CE forward\ninputs['latent_mode']    = False\ninputs['labels']         = inputs['student_labels']\ninputs['ce_patch_pos']   = student_outputs_latent.ce_patch_pos\ninputs['ce_patch_vec']   = student_outputs_latent.ce_patch_vec\ninputs['ce_emphasize_poss'] = inputs['observation_poss']\ninputs['ce_emphasize_factor'] = self.ce_emphasize_factor       # 4.0\ninputs['loss_type']      = ['ce', 'alignment']\nif 'student_attention_mask_4d' in inputs:\n    inputs['attention_mask_4d'] = inputs.pop('student_attention_mask_4d')\nce_loss, outputs = super().compute_loss(model, inputs, return_outputs=True, \u2026)\nalignment_loss = outputs.loss_dict['alignment']\nloss = ce_loss + self.alignment_weight * alignment_loss\n```\n\n**Stage 3 does NOT use `compute_latents_only_loss`.** This is significant: it means Stage 3's alignment gradient *does* flow through the whole LM trunk. The paper's emphasis on latent-only-BP applies to Stage 2 only.\n\n`load_offline_tensor` for Stage 3 reads files named `latent_{last_layer|all_layers}_{dataset}_{sample_id}.pt`, produced by `precompute_teacher_latents.py` running the Stage-2 checkpoint with `latent_mode=True, output_hidden_states=True` over Monet-SFT-125K. The teacher's per-position last-layer (or all-layer) hidden states at latent positions become the alignment target.\n\n### 7.4 Why Stage 3 collapses on the released checkpoint (our finding)\n\nOur Phase 0 probe (`phase0_monet_probe/REPORT.md`, also see `SUPPLEMENT.md`) found that on the **released** Monet-SFT-7B checkpoint:\n\n| stage | subset | mean cos (off-diag) | n_helpful_positions | utility (none_NLL \u2212 all_NLL) |\n|---|---|---:|---:|---:|\n| 2 | Visual_CoT | 0.375 | 4 | +2.71 |\n| **3** | Visual_CoT | **0.867** | **1** | **+0.26** |\n\nPairwise cosine matrix at Stage 3:\n\n```\n       p0   p1   p2   p3   p4   p5   p6   p7\n p0  1.00 0.83 0.68 0.63 0.61 0.60 0.60 0.59\n p1  0.83 1.00 0.94 0.87 0.84 0.83 0.82 0.81\n p2  0.68 0.94 1.00 0.98 0.96 0.94 0.93 0.92\n p3  0.63 0.87 0.98 1.00 0.99 0.98 0.97 0.97\n p4  0.61 0.84 0.96 0.99 1.00 1.00 0.99 0.99\n p5  0.60 0.83 0.94 0.98 1.00 1.00 1.00 1.00\n p6  0.60 0.82 0.93 0.97 0.99 1.00 1.00 1.00\n p7  0.59 0.81 0.92 0.97 0.99 1.00 1.00 1.00\n```\n\nPositions 4\u20137 are functionally collinear. Single-keep ablation: only position 0 is individually helpful.\n\nThe student-path replication (`STUDENT_PATH_NOTES.md`) gets the *same* shape (uniformly +0.01-+0.04 higher off-diag), confirming the collapse is a **property of the Stage-3 objective**, not an extraction-pathway artifact. This matches the architectural intuition: Stage 3 supervises against a *latent of a latent* with no encoder grounding \u2014 once the teacher target is itself a uniform vector, the student inherits the uniformity.\n\n**Implication for downstream work**: prefer Stage-2-style training (per-position encoder-grounded target) over Stage-3-style distill-from-latent-teacher. See *\u00a713.4*.\n\n### 7.5 Stage 3 \u2014 paper \u2194 code\n\n| Item | Paper | Code | Status |\n|---|---|---|---|\n| Objective | Eq. 5 | `loss = ce_loss + \u03b2\u00b7alignment_loss` (no surrogate) | \u2713 |\n| \u03b2 | 2.0 | `--alignment_weight 2.0` | \u2713 |\n| Latent-only BP | not used (paper only mentions for Stage 2) | not used in trainer | \u2713 |\n| Aux images at student | dropped | `student_input_ids` is the stripped variant | \u2713 |\n| Teacher | Stage-2 checkpoint | `--teacher_latent_dir <stage2>/monet_precomputed_target_latent/\u2026` | \u2713 |\n| Init | Stage 1 ckpt | `--load_model_path \u2026/sft_stage1_ce2.0` | \u2713 |\n| K | 8 (per shipped script) | `--latent_size 8` | \u2713 |\n| Steps | 1000 (\u2248 1 epoch) | `--epochs 2` (~1844 steps) | \u25b3 |\n| `--stage` flag string | n/a | `\"avt_v5_stage2\"` (legacy internal name, but Stage 3 in spirit) | \u25b3 Code/comment quirk; `main.py` parses this string |\n\n---\n\n## 8. RL \u2014 VLPO\n\n### 8.1 Setup\n\n- **Framework**: `verl` (EasyR1 fork) \u2014 `RL/` is mostly vendored verl + Monet patches.\n- **Conda env**: `easyr1` (Python 3.11), separate from the SFT env.\n- **vLLM**: pinned to 0.8.5 (per `RL/monet_rl_patch.py`).\n- **Data**: Thyme-RL 3.2K subset, 1 epoch.\n- **Reward**: accuracy reward (1 if correct, 0 otherwise) + format reward (encourages `\\boxed{}`). No explicit latent-reasoning reward.\n- **Judge**: rule-based + Gemini 2.5 Pro (configurable via `RL/examples/config_monet.yaml::reward_function`).\n- **Latent size**: **K = 10** (vs K=8 in SFT) \u2014 increased during RL.\n\n### 8.2 Hyperparameters (`RL/examples/vlpo_train.sh`)\n\n```\nCUDA_VISIBLE_DEVICES=0..7\nRAY_NUM_GPUS=8, RAY_NUM_CPUS=16\nLATENT_SIZE          = 10\nMONET_RL_SIGMA       = 10.0       # set on both actor and ref\nROLLOUT_N            = 8\nTEMPERATURE          = 0.5\nSELECT_ACC_THRESHOLD = 0.6        # group-acc filter\nKL_COEF              = 0.01\nORI_BSZ              = 64\nONLINE_ACCUM_SIZE    = 256\nMAX_PROMPT_LENGTH    = MAX_RESPONSE_LENGTH = 4096\nTENSOR_PARALLEL_SIZE = 1\n```\n\nTrainer entry: `python -m verl.trainer.main --config examples/config_monet.yaml sampling_strategy=monet`.\n\n### 8.3 The Gaussian importance ratio for latents\n\nDiscrete tokens have a tractable `log \u03c0(t|s)`. Continuous latents don't. Monet's trick:\n\n**Policy density at latent slot `t` for trajectory `i`** (Eq. 7):\n\n$$\\pi_\\theta(h^{\\text{old}}_{i,t} \\mid Q, I, o_{i,<t}) = \\exp\\!\\bigg(-\\frac{1}{2\\sigma^2}\\|h^{\\text{old}}_{i,t} - h^\\theta_{i,t}\\|^2\\bigg) \\cdot Z^{-1}$$\n\ni.e. treat the *old policy's emitted latent* as a Gaussian sample from a unit-variance Gaussian centered at the new policy's emitted latent (with std \u03c3).\n\n**Importance ratio for that slot** (Eq. 8):\n\n$$r_{i,t}(\\theta) = \\exp\\!\\bigg(-\\frac{1}{2\\sigma^2}\\|h^{\\text{old}}_{i,t} - h^\\theta_{i,t}\\|^2\\bigg)$$\n\nThe normalizer cancels; the ratio is just the Gaussian kernel between old and new latent embeddings. **\u03c3 = 10.0**.\n\nFor trajectories with `A > 0` (advantage from accuracy reward), this ratio pulls the new latent toward the old (good) latent. For `A < 0` it pushes away. KL penalty against the reference (SFT) latents is computed analogously, with `KL_COEF = 0.01`.\n\n**Selection threshold**: groups with average accuracy below 0.6 are filtered (matches Dr.GRPO-style filtering \u2014 keep informative groups, drop unanimous-fail groups).\n\n### 8.4 What this *doesn't* solve\n\n- The importance ratio is unbounded above (Gaussian kernel can be very small in the tails \u2192 very large ratio with tiny advantage). PPO-style clipping logic in verl applies; verify \u03c3 choice empirically.\n- \u03c3 acts like a temperature on the policy distribution. \u03c3 \u2192 \u221e: ratio \u2192 1, no learning signal. \u03c3 \u2192 0: ratio collapses to indicators on identical latents, gradient explodes. \u03c3 = 10.0 is a tuned value; paper Table 8 doesn't show ablations on it.\n- Reward is **accuracy + format**; no latent-shape reward (e.g. anti-collapse, diversity). The latent quality is shaped entirely by SFT initialization + KL anchor. *\u00a713.5* expands.\n\n---\n\n## 9. Inference \u2014 vLLM patch\n\n### 9.1 Why a patch is needed\n\nHF generation doesn't know to take the previous step's *hidden state* as the next step's *input embedding*. Two options:\n- Override `generate` in `Qwen2_5_VLForConditionalGeneration` to do the K-step regime manually. Doesn't scale.\n- Patch vLLM's GPU model runner to do it batched. This is what Monet ships.\n\n### 9.2 The patch (`inference/vllm/monet_gpu_model_runner.py`)\n\nTwo patches into vLLM v1's `GPUModelRunner.execute_model`:\n\n**(a) Boundary detection** after sampling, before output caching:\n\n```python\nlast_token_h = sample_hidden_states     # [num_reqs, H]\nfor i, req_id in enumerate(self.input_batch.req_ids):\n    st = self.latent_state.setdefault(req_id, {\"active\": False, \"pending\": None, \"current_len\": 0})\n    gen_ids = valid_sampled_token_ids[i]\n    for j, tid in enumerate(gen_ids):\n        if not st[\"active\"] and tid == self.latent_start_id:\n            st[\"active\"] = True\n        elif st[\"active\"] and (tid == self.latent_end_id or st[\"current_len\"] >= self.latent_size):\n            st[\"active\"] = False\n            st[\"pending\"] = None\n            st[\"current_len\"] = 0\n            valid_sampled_token_ids[i] = [self.latent_end_id]\n    if st[\"active\"] and last_token_h is not None:\n        st[\"pending\"] = last_token_h[i].detach()\n        st[\"current_len\"] += 1\n```\n\n**(b) Input embedding override** at the start of the next forward:\n\n```python\noverride_indices, override_embeds = [], []\nfor i, req_id in enumerate(self.input_batch.req_ids):\n    st = self.latent_state.get(req_id)\n    if st and st.get(\"active\") and st.get(\"pending\") is not None:\n        override_indices.append(rows_cpu[i].item())\n        override_embeds.append(st[\"pending\"])\nif override_indices:\n    idx = torch.tensor(override_indices, device=\u2026, dtype=\u2026)\n    embeds = torch.stack(override_embeds, dim=0)\n    self.inputs_embeds.index_copy_(0, idx, embeds)\n    # clear pending after consume\n```\n\nPer-request state lives in `self.latent_state[req_id] = {\"active\": bool, \"pending\": Optional[Tensor], \"current_len\": int}`. Constraints:\n- **Single pipeline-parallel rank** (`len(get_pp_group().ranks) == 1`).\n- **Speculative decoding incompatible** (disabled when `self.speculative_config` is set).\n- Tensor parallel = 4 in shipped example.\n\n### 9.3 Wiring\n\n`inference/apply_vllm_monet.py::patch()`:\n\n```python\nos.environ[\"LATENT_START_ID\"] = \"151666\"\nos.environ[\"LATENT_END_ID\"]   = \"151667\"\nsys.modules[\"vllm.v1.worker.gpu_model_runner\"] = patched_runner_module\nsys.modules[\"vllm.worker.gpu_model_runner\"]    = patched_runner_module     # legacy v0 path\nsys.modules[\"vllm.worker.model_runner\"]        = patched_runner_module\n```\n\nExample caller `inference/vllm_inference_example.py` is the end-to-end: instantiate `LLM` from `monet_qwen_model/apply_qwen2_5_monet.py`'s patched HF class, build messages, generate, then `replace_abs_vis_token_content` regex-rewrites `<abs_vis_token>\u2026</abs_vis_token>` \u2192 `<latent>\u2026</latent>` in the displayed string.\n\n### 9.4 What no eval script ships\n\nThe repo has **no V\u2605, MMVet, HRBench, or MME-RealWorld runners**. README points to external [VLMEvalKit](https://github.com/open-compass/VLMEvalKit) with the system prompt:\n\n> *You are a helpful multimodal assistant. \u2026 Put your final answer in `\\boxed{}`.*\n\nThe boxed-answer convention is shared with the RL format reward. Anyone replicating paper numbers must (a) install VLMEvalKit, (b) point it at the vLLM-patched Monet inference path, (c) use that exact system prompt, and (d) confirm `LATENT_SIZE` env matches the checkpoint (8 for SFT, 10 for RL). This is the open task tracked as Task #10 (owned by our Session A).\n\n---\n\n## 10. Paper \u2194 code agreement \u2014 single-table summary\n\n| Topic | Paper claim | Code reality | Agreement |\n|---|---|---|---|\n| Stage 1 objective | NTP w/ emphasized CE | `loss_type=['ce']`, `ce_emphasize_factor=2.0` | \u2713 |\n| Stage 2 objective | NTP + \u03b1\u00b7L_align-obs | Two-mode: (`ce + \u03b1\u00b7align`) \u2225 (`emphasize\u00b7latent_only_loss + ce`) | \u2713 when surrogate path active |\n| Latent-only BP | Eq. 9/10 | `compute_latents_only_loss` (`src/trainer.py:11-42`) | \u2713 Verbatim |\n| Alignment loss | All-layer 1-cos | `alignment_loss` selects 3-D vs 1-D teacher; both shipped scripts use 3-D | \u2713 |\n| Stage 3 objective | NTP + \u03b2\u00b7L_align-latent | `ce + \u03b2\u00b7alignment_loss` (no surrogate) | \u2713 |\n| 4D mask | aux img \u2192 latent only | `build_4d_attn` with default flags off | \u2713 (default flags) |\n| K | 8/10/12 mentioned; SFT released = 8 | `--latent_size 8` | \u2713 |\n| \u03b1, \u03b2 | 2.0, 2.0 | 2.0, 2.0 (`sft_stage{2,3}.sh`) | \u2713 |\n| `ce_emphasize_factor` | not in main text | 2.0 (S1) / 4.0 (S2) / 4.0 (S3) | code-only |\n| `emphasize_latent_weight` | not in main text | 2.0 (S2 only) | code-only |\n| Training steps | 3885 / 1000 / 1000 | `--epochs {4, 2, 2}` (paper appears to underreport) | \u25b3 Off by ~2\u00d7 on S2/S3 |\n| Batch size | bs=1, gas=16 | Same | \u2713 |\n| Training data | Monet-SFT-125K | Same in all three scripts | \u2713 |\n| RL data | \"3.2K from Thyme-RL\" | Confirmed via dataset_valid_ids | \u2713 |\n| RL importance ratio | Eq. 8 Gaussian | `MONET_RL_SIGMA=10.0` in `RL/monet_rl_patch` | \u2713 |\n| RL accuracy threshold | 0.6 | `SELECT_ACC_THRESHOLD=0.6` | \u2713 |\n| RL KL coef | not in Table 8 | `KL_COEF=0.01` | code-only |\n| Inference | vLLM w/ hidden-state feedback | `inference/vllm/monet_gpu_model_runner.py` patch | \u2713 |\n| Eval | \"VLMEvalKit + the boxed-answer prompt\" | No eval scripts in repo | \u2713 (but unimplemented in-repo) |\n| License | not mentioned | None at top level, Apache-2.0 only in RL/ | code-only |\n\n---\n\n## 11. Code-only details (gotchas not in paper)\n\nThese are the things that matter operationally but the paper doesn't (or barely) cover:\n\n1. **`emphasize_latent_weight` vs `alignment_weight` are different knobs.** The paper only names `\u03b1`. In code, `emphasize_latent_weight` gates the surrogate path; setting it to 0 collapses Stage 2 to vanilla `ce + \u03b1\u00b7align`. The shipped script's `2.0 \u00d7 2.0` means the *effective* alignment-induced gradient on the latent-generation graph is `4 \u00d7 (\u2202L_align/\u2202h_latent)\u00b7(\u2202h_latent/\u2202\u03b8)`.\n\n2. **`ce_emphasize_factor` is 2.0 in Stage 1 but 4.0 in Stages 2/3.** Paper doesn't ablate or mention this jump. Higher weighting on observation-token CE in S2/S3 likely compensates for the latent-replacement-of-aux-images shrinking the per-step visual information.\n\n3. **Stage 3 *omits* the latent-only-BP surrogate.** The paper's emphasis on the surrogate is Stage-2-only. Stage 3's alignment gradient flows through the whole trunk.\n\n4. **`alignment_loss.item() != 0.0` guard.** If alignment happens to come out \u2248 0 (rare but possible at warmup or with degenerate batches), the surrogate path is skipped and the trainer falls back to naive add. Not a bug, but worth knowing.\n\n5. **`allow_unused=True` is a silent footgun.** If `ce_patch_vec` is not in the CE-forward graph (e.g. you forgot `inputs['ce_patch_vec'] = outputs.ce_patch_vec`), `torch.autograd.grad` returns `None` for every entry \u2192 zero proxy \u2192 no learning. No error. We catch this with the smoke gate.\n\n6. **`gradient_checkpointing` is toggled around the latent forward.** `disable()` before latent (which needs `use_cache=True`), `enable()` before CE. Required, not optional. If you keep it enabled for the latent forward you OOM and/or get silent recompute mismatches.\n\n7. **Batch size 1 is the only tested config.** Upstream code at `modeling_qwen2_5_vl_monet.py:1745` literally says *\"WARNING: we only use batch_size=1 in our training. Larger batch_size has not been tested.\"* The latent forward iterates samples in a Python for-loop \u2014 bsz > 1 is correct in principle but untested.\n\n8. **Module-level monkey-patching, twice.** Both training and inference patch `sys.modules` before any `import transformers`. Putting any code that imports `transformers.models.qwen2_5_vl` before the patch silently uses vanilla Qwen.\n\n9. **Token IDs hardcoded.** `LATENT_START_ID=151666`, `LATENT_END_ID=151667` are baked into env vars. Match your tokenizer or things break silently.\n\n10. **Two conda envs.** SFT (`monet`, Python 3.10, transformers/vllm one set) and RL (`easyr1`, Python 3.11, transformers/vllm another set) are not unifiable. The `RL/` subtree has its own pyproject.toml.\n\n11. **Teacher representation is offline + named-on-disk.** `precompute_teacher_reps.py` dumps one `.pt` per sample, named with `{rep_type}_{alignment_layer}_{dataset}_{sample_id}.pt`. Storage cost at 118K \u00d7 28 layers \u00d7 ~5 obs \u00d7 3584 dim \u00d7 bf16 \u2248 70 GB; in practice \u2248 480 GB once sequence-length variance is included. Our inline-forward port trades that storage for ~14 GB resident.\n\n12. **Stage 3 student strips assistant-turn aux images** (`student_input_ids` \u2260 `teacher_input_ids`). The user's *question* image is kept; only the assistant-turn aux images that latents are meant to replace are dropped.\n\n13. **`avt_v5_stage2` legacy string.** `sft_stage3.sh` passes `--stage \"avt_v5_stage2\"` (legacy internal name for what the paper calls Stage 3). `main.py` parses this exact string. Don't rename without grepping.\n\n14. **No top-level LICENSE.** Only `RL/LICENSE` (Apache-2.0). Treat the rest as license-unspecified.\n\n15. **vLLM 0.8.5 pin for RL** (per `RL/monet_rl_patch.py`). Different vLLM in the SFT/inference env.\n\n16. **Custom `prepare_inputs_for_generation` returns 4-D position IDs**, prepending text positions to Qwen's 3-D vision positions. If you wrap Monet inference in custom decoding code, beware position shape changes.\n\n---\n\n## 12. Hyperparameter tables \u2014 consolidated\n\n### 12.1 SFT (from paper Table 7 + shipped scripts)\n\n| Param | Paper Table 7 | `sft_stage1.sh` | `sft_stage2.sh` | `sft_stage3.sh` |\n|---|---|---|---|---|\n| lr | 1e-5 | 1e-5 (default) | 1e-5 | 1e-5 |\n| bsz | 1 | 1 | 1 | 1 |\n| grad_accum_steps | 16 | 16 | 16 | 16 |\n| weight_decay | 0.01 | 0.01 (default) | 0.01 | 0.01 |\n| epochs / steps | S1: 3885 \u2248 3ep, S2/S3: 1000 \u2248 1ep | `--epochs 4` | `--epochs 2` | `--epochs 2` |\n| K (latent_size) | {8, 10, 12} | n/a | 8 | 8 |\n| \u03b1 (alignment_weight) | 2.0 | n/a | 2.0 | 2.0 |\n| \u03b2 (alignment_weight) | 2.0 | n/a | n/a | 2.0 |\n| emphasize_latent_weight | not named | n/a | 2.0 | not used |\n| ce_emphasize_factor | \"emphasized CE\" | 2.0 | 4.0 | 4.0 |\n| alignment_layer | \"all layers\" | n/a | all_layers | all_layers |\n| max pixels per image | 2000\u00b728\u00b2 (S1, S3), 1500\u00b728\u00b2 (S2) | 2000\u00b728\u00b2 | 1500\u00b728\u00b2 | 2000\u00b728\u00b2 |\n| optim | AdamW | AdamW | AdamW | AdamW |\n| warmup | not specified | default `transformers` | default | default |\n| deepspeed | ZeRO-2 | ds_zero2_gpu.json | same | same |\n| init | Qwen2.5-VL-7B | Same | Stage 1 ckpt | Stage 1 ckpt (not Stage 2) |\n| teacher | n/a | n/a | Stage 1 ckpt with aux images | Stage 2 ckpt (latent forward) |\n\n### 12.2 RL / VLPO (from paper Table 8 + `vlpo_train.sh`)\n\n| Param | Paper | Script | Notes |\n|---|---|---|---|\n| lr | 1e-6 | (via `config_monet.yaml`) | |\n| Global bsz | 64 | `ORI_BSZ=64` | |\n| Online accumulator | not in paper | `ONLINE_ACCUM_SIZE=256` | code-only |\n| Rollout N | 8 | `ROLLOUT_N=8` | |\n| Temperature | 0.5 | `TEMPERATURE=0.5` | |\n| Max prompt / response length | 4096 | `MAX_PROMPT_LENGTH=MAX_RESPONSE_LENGTH=4096` | |\n| VLPO \u03c3 | 10.0 | `MONET_RL_SIGMA=10.0` | actor + ref |\n| Latent size K | 10 | `LATENT_SIZE=10` | up from K=8 in SFT |\n| Accuracy threshold | 0.6 | `SELECT_ACC_THRESHOLD=0.6` | |\n| KL coef | not in paper | `KL_COEF=0.01` | code-only |\n| Tensor parallel | not in paper | `TENSOR_PARALLEL_SIZE=1` | |\n| RL data | 3.2K Thyme-RL, 1 epoch | dataset_valid_ids/ | |\n| Judge | \"rule-based + Gemini\" | Gemini 2.5 Pro default | |\n\n---\n\n## 13. Empirical headlines\n\n### 13.1 Paper Table 3-5 (released numbers)\n\nMonet-7B (full SFT + VLPO, K=10) vs Qwen2.5-VL-7B base:\n\n| Benchmark | Monet-7B | Qwen2.5-VL-7B |\n|---|---:|---:|\n| V\u2605 | 83.25 | 76.44 |\n| HRBench4K | 83.48 | 77.39 |\n| HRBench8K | 82.89 | 75.00 |\n| MME-RealWorld-Lite | **79.75** | 63.75 |\n| VisualPuzzles | **35.02** | 32.71 |\n\n### 13.2 Stage-2 ablation (paper Table 2)\n\n| Stage-2 variant | V\u2605 |\n|---|---:|\n| Full Monet-SFT | **82.20** |\n| w/o latent-only BP | **46.07** |\n| w/o aux images (in Stage 2) | 73.30 |\n| w/o observation alignment | 75.39 |\n\n**Latent-only BP is the load-bearing component.** Removing it = catastrophic. This is what our Job B vs Job C A/B is designed to verify.\n\n### 13.3 RL / VLPO ablation (paper Table 5)\n\n| Variant | V\u2605 |\n|---|---:|\n| Monet-7B (full) | 83.25 |\n| Monet-SFT (no VLPO) | 82.20 |\n| Monet-SFT + GRPO | 80.10 |\n\n**GRPO underperforms VLPO and even underperforms no-RL.** This is the paper's main RL claim \u2014 Gaussian importance ratios beat token-discrete GRPO ratios on latent slots.\n\n### 13.4 Our finding: Stage 3 collapse on the released checkpoint\n\n| stage | subset | mean cos | n_helpful | utility |\n|---|---|---:|---:|---:|\n| 2 | Visual_CoT | 0.375 | 4 | +2.71 |\n| 2 | Zebra_count | 0.394 | 2 | +0.19 |\n| 3 | Visual_CoT | **0.867** | **1** | **+0.26** |\n| 3 | Zebra_count | **0.840** | **0** | **-0.001** |\n\nSource: `phase0_monet_probe/REPORT.md`, n=100, monet-self reader. **Stage 3 latents are functionally degenerate** even on the released checkpoint. The paper reports V\u2605 improvements at the RL-final stage; intermediate Stage-3 quality is not directly evaluated in the paper.\n\n### 13.5 What the released checkpoints actually demonstrate\n\n- **The Stage-2 recipe works** (encoder-grounded all-layer alignment with latent-only-BP) \u2014 produces latents with healthy diversity and high reader utility.\n- **The Stage-3 recipe collapses** the latent representation under our internal probe \u2014 the *latent-of-a-latent* supervision target with no encoder grounding drives all-K-positions toward redundancy. The released Monet-SFT-7B (this is Stage 2) has *better* internal-probe metrics than the Monet-7B (post-Stage-3 + VLPO) on our probe.\n- **RL salvages benchmark scores** but doesn't fix the representation geometry. The model still answers correctly on V\u2605/MMVet because the *answer-tokens* see useful latents at decode time \u2014 but the latents themselves carry little position-distinct information.\n\nThe conclusion has shaped our roadmap: import Stage-2-style training; skip Stage-3-style self-distill; if VICReg-style variance/covariance regularization can be added on top of Stage 2, it should *strengthen* the same property the latent-only BP is already providing.\n\n---\n\n## 14. Hook points for variation\n\nThe natural places to plug in a controlled variation. Per-point: what to swap, where in the code, what risk that introduces.\n\n### H1. Swap the alignment loss\n\n**Where**: `modeling_qwen2_5_vl_monet.py:244-250` (`alignment_loss(teacher_hidden_states, student_hidden_states)`).\n\n**What to swap**:\n- **VICReg** (variance + invariance + covariance) \u2014 invariance term replaces `1 - cos`, variance hinge on student per-position std, covariance penalty on student per-dim cross-covariance. Drops the *teacher* requirement (variance hinge + covariance are self-supervised) \u2014 this is its big advantage if Stage 2's expensive teacher forward is a bottleneck.\n- **Barlow Twins** (cross-correlation on teacher\u2013student per-dim) \u2014 closer to alignment in spirit, requires teacher.\n- **InfoNCE** (contrastive) \u2014 would require negatives; awkward at bsz=1 unless cross-sample negatives.\n- **L2 in feature space** \u2014 simpler, no temperature.\n\n**Risk**: alignment is computed differently for 3-D (`[L_layers, N_align, H]`) vs 1-D teacher; swapping must preserve the multi-layer aggregation contract or downstream `loss_dict['alignment']` shapes break.\n\n**Already started**: `cluster/configs/v3_monet_plus_vicreg.yaml` is the V3 config (`lambda_reg=1.0, reg_var_w=1.0, reg_cov_w=0.04, reg_gamma=1.0`) that runs additive VICReg on top of the Monet recipe. The trainer code is wired (`cluster/reg.py`); just needs cluster submission. See \"Future\" below.\n\n### H2. Swap the latent-only-BP surrogate\n\n**Where**: `src/trainer.py:11-42` / our `cluster/trainer_monet_stage2.py::compute_latents_only_loss`.\n\n**What to swap**:\n- **Naive add** (`ce + \u03b1\u00b7align`) \u2014 same as Job B; collapses (V\u2605 46 per paper Table 2; cos 0.84 in our internal probe).\n- **Last-N-layer surrogate** \u2014 restrict the `torch.autograd.grad` chain to only the latent-generation layers, not the whole encoder.\n- **Detached-then-MSE** \u2014 compute alignment in a side path with detached student hidden states; use direct MSE on `ce_patch_vec` to fixed targets. Drops the teacher.\n- **Gradient clipping inside the surrogate** \u2014 for stability, clip `g.detach()` per element.\n\n**Risk**: the smoke gate (`latent_only_connected=True`) only checks \"is the grad non-zero\" \u2014 it doesn't check magnitude. Aberrant magnitudes show up as `tot` oscillation but don't fail fast.\n\n### H3. Replace the latent input embedding\n\n**Where**: `modeling_qwen2_5_vl_monet.py:1914-1916`.\n\n```python\nprev_hidden = batch_last_hidden_state[b, pos - 1, :].unsqueeze(0).unsqueeze(0).contiguous()\nlatent_embed = prev_hidden.clone() if self.training else prev_hidden.detach()\n```\n\n**What to swap**:\n- **Learned latent codebook** \u2014 vector-quantize the previous hidden state through a learned codebook (VQ-VAE-style). Stops gradient flow through the embedding update, simplifies analysis.\n- **Random projection then layernorm** \u2014 break the hidden-state-identity link; force the latent to be a true bottleneck.\n- **Cross-attention pooling** \u2014 instead of \"previous hidden state\", compute latent as cross-attention over question + image features.\n\n**Risk**: this is the load-bearing architectural primitive. Changing it changes the meaning of \"latent\" \u2014 direct comparison to Monet baselines is no longer apples-to-apples.\n\n### H4. Replace the 4D attention mask policy\n\n**Where**: `src/utils.py::build_4d_attn` (or our `cluster/mask_utils.py::build_monet_4d_attn`).\n\n**What to swap**:\n- **Aux image visible to text too** \u2014 relax the \"only latents see aux\" constraint. Probably hurts; that's the constraint that forces latents to encode the image.\n- **Latent block can see prior observations** \u2014 currently latents see prior latents; allowing them to see prior observation-token text might enrich the latent context. Toggle: `latent_can_see_observations=True` (would need adding).\n- **No 4D mask at all** (`--not_use_4d`) \u2014 already supported. Useful baseline.\n\n**Risk**: silent \u2014 the mask is dict-form vs tensor-form; mis-passing falls back to standard causal mask without error.\n\n### H5. Add a per-position regularizer to the latent block\n\n**Where**: in the trainer, after the latent forward, before the CE forward.\n\n**What to add**:\n- **Variance hinge** on `outputs.ce_patch_vec[b]` across the K dimensions \u2014 directly penalize position collinearity. This is the V3 lever: `cluster/reg.py::vicreg_loss(ce_patch_vec, ...)` already implements VICReg-style var + cov on the K latent slots.\n- **Diversity loss** (1 - mean pairwise cosine over the K slots) \u2014 direct anti-collapse signal.\n- **Information bottleneck** (KL to a prior) \u2014 formal entropy regularizer.\n\n**Risk**: depending on weight, can fight alignment. Sweep `lambda_reg` from below the alignment scale upward; V3 starts at `lambda_reg=1.0` (paper \u03b1=2.0 so the regularizer is half the alignment pressure).\n\n### H6. Swap teacher choice\n\n**Where**: in the precompute script (or our inline trainer forward).\n\n**What to swap**:\n- **Base Qwen2.5-VL-7B-Instruct** (our current cluster choice; deviation #3) vs **Stage-1-SFT checkpoint** (upstream choice). The Stage-1 teacher is text-format-aware (it emits `<observation>` tags); the base teacher has more diverse representations but no Monet-format awareness. The effect on alignment-grounded latents is non-trivial.\n- **Stronger teacher** (e.g. Qwen2.5-VL-72B) \u2014 likely improves, expensive.\n- **Self-teacher** (= an EMA of the student) \u2014 drops the need for a separate model; risks degenerate self-alignment.\n\n**Risk**: paper figures use the Stage-1-SFT teacher; deviating muddles direct comparison.\n\n### H7. Drop Stage 3 entirely\n\n**Where**: skip `sft_stage3.sh` in the pipeline.\n\n**Effect**: model emits latents only when aux images *are* available in input (Stage 2 inference regime). Useful as a baseline. Our Phase 0 results suggest Stage 3 is the collapse source, so a \"Monet without Stage 3\" baseline is worth running.\n\n**Risk**: changes what the released checkpoint represents \u2014 published numbers won't be directly comparable.\n\n### H8. Add a latent-shape reward in RL\n\n**Where**: `RL/examples/config_monet.yaml::reward_function`; `RL/tools/custom_api.py`.\n\n**What to add**:\n- **Diversity bonus** \u2014 reward the K latents being far from each other in some metric.\n- **Decoder-utility bonus** \u2014 measure how much the latents *helped* the answer NLL; reward proportionally.\n\n**Risk**: shaping rewards can game; need a careful judge. The paper's \"accuracy + format\" is purposely minimal.\n\n---\n\n## 15. Open questions / future directions (project-internal)\n\n**Q1. Does the deviation-#1 fix lift our Job B collapse?**\n- Pending: Job C step-1500 evaluation (Task #17/#18, unblock on local data path).\n- Comparison points already established: Job B step-1500 = cos 0.840 / util \u22125.35; released Stage-2 = cos 0.377 / util +2.05.\n\n**Q2. Is the inline teacher (base Qwen) materially worse than the Stage-1-SFT teacher?**\n- Affects whether our deviation #3 is a correctness concern or just an efficiency tradeoff.\n- Test: train a small Stage-2 run twice \u2014 once with each teacher \u2014 compare internal-probe metrics at matched step.\n\n**Q3. Does VICReg additive lift Stage-2 further?**\n- `cluster/configs/v3_monet_plus_vicreg.yaml` ready; just needs cluster submission (user-approved per project rule \u00a73-A).\n- Hypothesis: VICReg helped at 3B/5K (Pivot A). It should help at 7B/118K \u2014 but the effect may be smaller given Monet's alignment already shapes per-position structure.\n\n**Q4. Can we replace Stage 3 entirely with a different inference-without-aux strategy?**\n- Phase 0 found Stage 3 collapses on our probe. If we drop Stage 3, can we still get aux-image-free inference?\n- Options: (a) train a latent-classifier head that decides whether to emit `<latent>` (vs proceed text-only), (b) just operate the Stage-2 model with aux images present at all inference time, (c) introduce a different anti-collapse Stage 3 (VICReg-on-latents instead of cosine-align-to-teacher).\n\n**Q5. What's the right \u03c3 for VLPO?**\n- Paper picks 10.0; no ablation. \u03c3 trades off learning signal (low \u03c3 = sharp ratio) vs gradient stability (high \u03c3 = ratio \u2248 1).\n- Out of scope for our SFT-only roadmap, but flag for any future RL work.\n\n---\n\n## 16. References\n\n- arXiv: https://arxiv.org/abs/2511.21395 ([HTML v2](https://arxiv.org/html/2511.21395v2))\n- GitHub: https://github.com/NOVAglow646/Monet\n- HF SFT model: https://huggingface.co/NOVAglow646/Monet-SFT-7B\n- HF RL model: https://huggingface.co/NOVAglow646/Monet-7B\n- HF dataset: https://huggingface.co/datasets/NOVAglow646/Monet-SFT-125K\n- EasyR1 (RL framework): https://github.com/hiyouga/EasyR1\n- VLMEvalKit (suggested eval): https://github.com/open-compass/VLMEvalKit\n\nLocal cross-references:\n- `phase0_monet_probe/REPORT.md` \u2014 internal probe results (Stage 2 healthy, Stage 3 collapsed).\n- `phase0_monet_probe/SUPPLEMENT.md` \u2014 teacher-vs-student path replication.\n- `phase0_monet_probe/STUDENT_PATH_NOTES.md` \u2014 implications for Stage-3 self-distill.\n- `cluster/trainer_monet_stage2.py` \u2014 our paper-faithful Stage-2 port (Job C).\n- `cluster/configs/stage2_monet_jobC.yaml` \u2014 the recipe used.\n- `cluster/configs/v3_monet_plus_vicreg.yaml` \u2014 the VICReg-additive variant config.\n- `eval_local/MONET_REPRO_LOG.md` \u2014 cross-session paper-eval reproduction log (Session A).\n\n---\n\n*Report compiled 2026-05-21. Based on arXiv v2 (2025-11-27), GitHub commit at HEAD as of that date, and local probe results from 2026-05-12 + cluster training runs through 2026-05-19.*\n";
+
+  // Render verbatim markdown into the source pane.
+  function buildSourcePane() {
+    // Custom renderer: lower header levels by 1 and add id anchors matching the
+    // GitHub-style slug (kebab + lowercase, strip punctuation).
+    marked.use({
+      renderer: {
+        heading(text, level) {
+          const slug = String(text).toLowerCase()
+            .replace(/<[^>]+>/g, '')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .trim().replace(/\s+/g, '-');
+          return `<h${level} id="${slug}">${text}</h${level}>`;
+        }
+      }
+    });
+    document.getElementById('sourceBody').innerHTML = marked.parse(MARKDOWN_SOURCE);
+    // Re-render KaTeX inside the source pane too.
+    renderMathInElement(document.getElementById('sourcePane'), {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$",  right: "$",  display: false}
+      ],
+      throwOnError: false
+    });
+  }
+
+  function openSrc(anchor) {
+    document.getElementById('sourcePane').classList.add('open');
+    // Defer scroll until pane is in DOM.
+    setTimeout(() => {
+      const el = document.getElementById(anchor);
+      if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }, 80);
+  }
+  function toggleSrc() {
+    document.getElementById('sourcePane').classList.toggle('open');
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 's' || e.key === 'S') toggleSrc();
+  });
+
+  // Boot.
+  buildSourcePane();
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'fade',
+    width: 1280,
+    height: 800,
+    margin: 0.04,
+    minScale: 0.4,
+    maxScale: 1.4,
+    plugins: []
+  });
+  Reveal.on('ready', () => {
+    renderMathInElement(document.querySelector('.reveal'), {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$",  right: "$",  display: false}
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+
+</body>
+</html>
