@@ -26,7 +26,10 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH -t 8:00:00
+# Walltime: 1-day max (gpu-4farm partition cap). Expected actual ~6h; max
+# budget gives 18h slack — robustness over backfill priority (per user
+# request after Job C was walltime-killed at step 1690/2000).
+#SBATCH -t 1-00:00:00
 #SBATCH -o logs/%x_%j.log
 #SBATCH -e logs/%x_%j.log
 
