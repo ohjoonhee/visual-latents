@@ -1,0 +1,71 @@
+# Stage 3 Monet — JOB D BASELINE: paper-faithful Stage 3, no VICReg.
+#
+# Comparator for the VICReg variant (stage3_monet_jobD_vicreg.yaml). Same
+# trainer code, same hyperparameters; the only difference is lambda_reg=0
+# here vs lambda_reg=1.0 in the VICReg arm.
+#
+# Purpose: reproduce the Phase 0 finding (Stage 3 latents collapse — mean
+# off-diag cos ~0.87, n_helpful=1, util ~0) IN OUR INFRASTRUCTURE so the
+# A/B with VICReg is clean on the regularizer variable only.
+#
+# Recipe (mirrors upstream sft_stage3.sh):
+#   - init from Stage 1 SFT ckpt (NOT Stage 2 — paper-faithful)
+#   - teacher = released Monet-SFT-7B Stage 2, precomputed via
+#     scripts/cluster/precompute_teacher_latents.py
+#   - latent_size = 8
+#   - alignment_weight (β) = 2.0
+#   - ce_emphasize_factor = 4.0
+#   - alignment_layer = all_layers
+#   - 2 epochs over full Visual_CoT (eval-200 excluded)
+#   - eff_bsz = 128 (4 GPUs × micro_bsz=1 × grad_accum=32)
+#   - lr 1e-5, warmup 100, weight_decay 0.01, AdamW betas (0.9, 0.95), bf16
+
+run_name: stage3_monet_jobD_baseline
+wandb: true
+wandb_project: visual-latents
+
+base_model: Qwen/Qwen2.5-VL-7B-Instruct
+init_ckpt: /data/joonhee/visual-latents/cluster_phase3/stage1_sft/checkpoint
+
+# Teacher precompute output (produced by precompute_teacher_latents.py before this run).
+teacher_latent_dir: /data/joonhee/visual-latents/cluster_phase3/teacher_latents
+
+latent_size: 8
+alignment_weight: 2.0
+alignment_layer: all_layers
+ce_emphasize_factor: 4.0
+use_attn_mask_4d: true
+
+# VICReg knobs — OFF in the baseline arm.
+lambda_reg: 0.0
+reg_var_w: 1.0
+reg_cov_w: 0.04
+reg_gamma: 1.0
+
+# Data
+subset: Visual_CoT
+n_train_examples: 0   # full train slice
+eval_holdout: 200
+
+# Optim / schedule
+lr: 1.0e-5
+weight_decay: 0.01
+warmup_steps: 100
+# 2 epochs × 118K / eff_bsz=128 ≈ 1844 steps; budget 2000.
+max_steps: 2000
+grad_accum_steps: 32
+
+# Memory — Stage 3 has no inline teacher (vs Stage 2 +14GB/rank), so we
+# bump micro-batch effective via grad_accum=32 to compensate.
+gradient_checkpointing: true
+global_max_pixels: 1568000   # 2000 · 28² (Stage 3 budget per paper Table 7)
+per_img_pixels: 1003520      # 1280 · 28²
+min_pixels: 3136
+max_pixels: 1568000
+
+# Logging
+out_dir: /data/joonhee/visual-latents/cluster_phase3/stage3_jobD_baseline
+log_every: 10
+save_every: 500   # checkpoint every ~hour so we can resume / partial-eval
+
+seed: 0

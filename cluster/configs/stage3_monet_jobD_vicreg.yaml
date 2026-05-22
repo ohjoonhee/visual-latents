@@ -1,0 +1,73 @@
+# Stage 3 Monet — JOB D + VICReg: paper-faithful Stage 3 + λ·vicreg(latents).
+#
+# The treatment arm. IDENTICAL to stage3_monet_jobD_baseline.yaml EXCEPT
+# lambda_reg=1.0 (was 0.0). All other knobs, the trainer code, the data
+# slice, the init ckpt, the teacher precompute, the eval protocol — all
+# the same. One-variable A/B.
+#
+# VICReg knobs match the V3 config (cluster/configs/v3_monet_plus_vicreg.yaml,
+# the Stage 2 + VICReg recipe we never ran). Starting point is conservative
+# (λ=1.0 vs alignment_weight=2.0); the bias is to under-correct rather
+# than fight the alignment loss.
+#
+# Hypothesis: VICReg's variance hinge + cov penalty attack the low-rank
+# degeneracy that Stage 3's all-layer-cosine alignment loss permits.
+# Expected outcome: mean cos drops from ~0.87 (baseline expected) toward
+# ~0.40 (Stage 2 healthy signature), n_helpful rises, util becomes positive.
+
+run_name: stage3_monet_jobD_vicreg
+wandb: true
+wandb_project: visual-latents
+
+base_model: Qwen/Qwen2.5-VL-7B-Instruct
+init_ckpt: /data/joonhee/visual-latents/cluster_phase3/stage1_sft/checkpoint
+teacher_latent_dir: /data/joonhee/visual-latents/cluster_phase3/teacher_latents
+
+latent_size: 8
+alignment_weight: 2.0
+alignment_layer: all_layers
+ce_emphasize_factor: 4.0
+use_attn_mask_4d: true
+
+# VICReg ON — this is the only difference from the baseline config.
+#
+# Important: at our per-step scale (B=1, K_total=8 per example, H=3584) the
+# VICReg cov term operates on only 8 samples for a 3584×3584 cov matrix —
+# rank ≤ 8, severely noisy. The smoke test confirms the cov term value swamps
+# the var-term signal at this scale. So we DISABLE cov (reg_cov_w=0) and rely
+# on the variance hinge alone, which correctly penalizes per-dim collapse
+# (smoke: var-only random=0.7, collapsed=0.99 — collapse hurts more).
+#
+# The Pivot A G recipe used B=32 × K=4 = 128 samples for cov; that's why cov
+# worked there. We'd need to accumulate latents across grad_accum_steps to
+# match — left as future work; first see if var hinge alone is enough.
+lambda_reg: 1.0
+reg_var_w: 1.0
+reg_cov_w: 0.0       # DISABLED at this batch scale; see note above
+reg_gamma: 1.0
+
+# Data
+subset: Visual_CoT
+n_train_examples: 0
+eval_holdout: 200
+
+# Optim / schedule
+lr: 1.0e-5
+weight_decay: 0.01
+warmup_steps: 100
+max_steps: 2000
+grad_accum_steps: 32
+
+# Memory
+gradient_checkpointing: true
+global_max_pixels: 1568000
+per_img_pixels: 1003520
+min_pixels: 3136
+max_pixels: 1568000
+
+# Logging
+out_dir: /data/joonhee/visual-latents/cluster_phase3/stage3_jobD_vicreg
+log_every: 10
+save_every: 500
+
+seed: 0
