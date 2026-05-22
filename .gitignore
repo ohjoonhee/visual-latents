@@ -33,8 +33,9 @@ Thumbs.db
 *.swp
 *.swo
 
-# Claude Code local state
-.claude/
+# Claude Code local state (skills are tracked; worktrees/jobs/etc. stay out)
+.claude/*
+!.claude/skills/
 
 # Project artifacts (stay out of git; sync via rsync from cluster)
 data/
