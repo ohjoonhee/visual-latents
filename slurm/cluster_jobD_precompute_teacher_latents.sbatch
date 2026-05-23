@@ -25,7 +25,7 @@
 # Submit with: sb slurm/cluster_jobD_precompute_teacher_latents.sbatch
 # DO NOT agent-submit (project-owner rule §3-A).
 #
-#SBATCH -J vl-jobD-precompute-teacher-latents
+#SBATCH -J launch
 #SBATCH -p gpu-4farm
 #SBATCH --account=gpu
 #SBATCH --gres=gpu:h100:4

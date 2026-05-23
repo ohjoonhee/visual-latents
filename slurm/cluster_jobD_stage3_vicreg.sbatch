@@ -16,7 +16,7 @@
 # DO NOT agent-submit (project-owner rule §3-A). DO NOT submit until
 # baseline-collapse has been confirmed.
 #
-#SBATCH -J vl-jobD-stage3-vicreg
+#SBATCH -J launch
 #SBATCH -p gpu-4farm
 #SBATCH --account=gpu
 #SBATCH --gres=gpu:h100:4

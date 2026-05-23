@@ -17,7 +17,7 @@
 # Submit with: sb slurm/cluster_jobD_stage3_baseline.sbatch
 # DO NOT agent-submit (project-owner rule §3-A).
 #
-#SBATCH -J vl-jobD-stage3-baseline
+#SBATCH -J launch
 #SBATCH -p gpu-4farm
 #SBATCH --account=gpu
 #SBATCH --gres=gpu:h100:4
