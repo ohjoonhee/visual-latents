@@ -68,6 +68,11 @@ EVAL
 from __future__ import annotations
 
 # ===== monkey-patch BEFORE any transformers import =====
+# Idempotent: if the caller (e.g. scripts/cluster/precompute_teacher_latents.py)
+# already installed the Monet-patched qwen module in sys.modules, skip our own
+# patch silently. Without this, importing trainer_monet_stage3 as a module
+# would fire the "transformers already imported" assertion because the caller
+# had to import transformers to set up its own monkey-patch.
 import importlib.util
 import os
 import sys
@@ -82,18 +87,24 @@ os.environ.setdefault("LATENT_SIZE", "8")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 os.environ.setdefault("TRANSFORMERS_NO_AUTO_DOCSTRING", "1")
 
-assert "transformers" not in sys.modules, "FATAL: transformers already imported."
-
-_patch_path = PHASE0 / "monet_model" / "modeling_qwen2_5_vl_monet.py"
-if not _patch_path.exists():
-    raise FileNotFoundError(f"Monet vendored model not found at {_patch_path}")
-_spec = importlib.util.spec_from_file_location(
-    "transformers.models.qwen2_5_vl.modeling_qwen2_5_vl",
-    str(_patch_path),
-)
-_patched_mod = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_patched_mod)
-sys.modules["transformers.models.qwen2_5_vl.modeling_qwen2_5_vl"] = _patched_mod
+_MONET_QWEN_KEY = "transformers.models.qwen2_5_vl.modeling_qwen2_5_vl"
+if _MONET_QWEN_KEY not in sys.modules:
+    # No one has patched yet — do it ourselves. transformers must NOT already
+    # be imported, else the unpatched qwen module is what every downstream
+    # `from transformers...` will get.
+    assert "transformers" not in sys.modules, (
+        "FATAL: transformers already imported before Monet monkey-patch. "
+        "If you're importing this module from another script, that script must "
+        "install the patched modeling_qwen2_5_vl_monet.py into sys.modules first."
+    )
+    _patch_path = PHASE0 / "monet_model" / "modeling_qwen2_5_vl_monet.py"
+    if not _patch_path.exists():
+        raise FileNotFoundError(f"Monet vendored model not found at {_patch_path}")
+    _spec = importlib.util.spec_from_file_location(_MONET_QWEN_KEY, str(_patch_path))
+    _patched_mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_patched_mod)
+    sys.modules[_MONET_QWEN_KEY] = _patched_mod
+# else: caller already installed the patched module; trust them.
 # ======================================================
 
 import argparse
