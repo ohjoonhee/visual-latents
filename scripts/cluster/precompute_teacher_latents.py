@@ -241,6 +241,16 @@ def main():
                 n_err += 1
                 continue
 
+            # CE forward: passing `alignment_poss` (the latent positions) makes
+            # the model index hidden states for us — see
+            # modeling_qwen2_5_vl_monet.py:2033-2065. When output_hidden_states=True
+            # AND alignment_poss[0] is non-empty, the model returns
+            # `outputs.hidden_states` as a List[Tensor], one element per batch
+            # sample with shape [num_layers, K_total, H]. (Vs the standard tuple
+            # of full [B, L, H] per layer when alignment_poss is empty.)
+            #
+            # Loss is still skipped (loss_type=[]); alignment_poss just controls
+            # which positions get extracted into outputs.hidden_states.
             ce_out = teacher(
                 latent_mode=False,
                 input_ids=input_ids,
@@ -251,30 +261,22 @@ def main():
                 labels=None,
                 ce_patch_pos=lat_out.ce_patch_pos,
                 ce_patch_vec=lat_out.ce_patch_vec,
-                loss_type=[],            # we just want hidden states; no loss
+                alignment_poss=[alignment_poss],   # required: bypasses model's None-check at L2039
+                loss_type=[],
                 output_hidden_states=True,
                 return_dict=True,
                 use_cache=False,
             )
             hs = ce_out.hidden_states
-            if hs is None:
+            if hs is None or len(hs) == 0:
                 n_err += 1
                 continue
-
+            # hs[0] is [num_layers, K_total, H] for batch sample 0 (bsz=1 here).
+            all_layers = hs[0]
             if args.alignment_layer == "last_layer":
-                # hs[-1] is the final layer's hidden states: [B, L, H]
-                last = hs[-1][0]                              # [L, H]
-                tensor_to_save = last[alignment_poss, :].detach().cpu().to(torch.bfloat16)
-                # shape: [K_total, H]
+                tensor_to_save = all_layers[-1].detach().cpu().to(torch.bfloat16)  # [K_total, H]
             else:
-                # all_layers — stack tuple of [B, L, H] into [L_layers, K_total, H]
-                # for the alignment positions.
-                per_layer = []
-                for layer_hs in hs:                           # tuple length = num_layers + 1 (embed + each block)
-                    layer_hs_b = layer_hs[0]                  # [L, H]
-                    per_layer.append(layer_hs_b[alignment_poss, :])
-                all_layers = torch.stack(per_layer, dim=0)    # [L_layers, K_total, H]
-                tensor_to_save = all_layers.detach().cpu().to(torch.bfloat16)
+                tensor_to_save = all_layers.detach().cpu().to(torch.bfloat16)      # [num_layers, K_total, H]
 
             torch.save({"latent": tensor_to_save,
                         "metadata": dict(metadata),
