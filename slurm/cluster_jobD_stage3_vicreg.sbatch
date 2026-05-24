@@ -77,7 +77,8 @@ if [ ! -d "$STAGE1_CKPT" ]; then
   slack_notify ":x: vl-jobD-vicreg Stage 1 ckpt MISSING"; exit 12
 fi
 TEACHER_DIR=/data/joonhee/visual-latents/cluster_phase3/teacher_latents
-N_TEACHER=$(ls ${TEACHER_DIR}/latent_all_layers_*.pt 2>/dev/null | wc -l)
+# find, not glob — see note in cluster_jobD_stage3_baseline.sbatch.
+N_TEACHER=$(find ${TEACHER_DIR} -maxdepth 1 -name 'latent_all_layers_*.pt' -type f 2>/dev/null | wc -l)
 if [ "$N_TEACHER" -lt 100000 ]; then
   slack_notify ":x: vl-jobD-vicreg teacher_latents incomplete: ${N_TEACHER} files"; exit 12
 fi

@@ -78,7 +78,11 @@ if [ ! -d "$STAGE1_CKPT" ]; then
   slack_notify ":x: vl-jobD-baseline Stage 1 ckpt MISSING at ${STAGE1_CKPT}"; exit 12
 fi
 TEACHER_DIR=/data/joonhee/visual-latents/cluster_phase3/teacher_latents
-N_TEACHER=$(ls ${TEACHER_DIR}/latent_all_layers_*.pt 2>/dev/null | wc -l)
+# Use find (readdir-based) not glob expansion: with 117K files, the bash
+# glob `${TEACHER_DIR}/latent_all_layers_*.pt` exceeds ARG_MAX (~2MB), `ls`
+# silently fails (with 2>/dev/null swallowing the error), wc -l → 0, and
+# the missing-teacher check exits 12. This killed job 216603 silently.
+N_TEACHER=$(find ${TEACHER_DIR} -maxdepth 1 -name 'latent_all_layers_*.pt' -type f 2>/dev/null | wc -l)
 if [ "$N_TEACHER" -lt 100000 ]; then
   slack_notify ":x: vl-jobD-baseline teacher_latents incomplete: only ${N_TEACHER} files at ${TEACHER_DIR} (expected ~118K). Run precompute first."
   exit 12
