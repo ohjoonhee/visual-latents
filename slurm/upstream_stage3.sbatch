@@ -17,7 +17,10 @@
 #
 # Hyperparams (verbatim upstream): epochs=2, bsz=1, latent_size=8,
 # alignment_weight=2.0, ce_emphasize_factor=4.0, alignment_layer=all_layers,
-# stage="avt_v5_stage2" (upstream's legacy string for Stage 3).
+# stage=sft_stage3. NB: upstream's script_examples/sft_stage3.sh has a
+# stale --stage "avt_v5_stage2" left over from before the choices were
+# renamed in src/utils.py. src/main.py:349-351 routes 'sft_stage3' to
+# CustomTrainerSFT_STAGE3 — the class our VICReg patch lives in.
 #
 # Init: released Monet-SFT-7B/stage1 (upstream's published Stage 1 ckpt).
 # Teacher latents: /data/.../upstream_teacher_latents/ (produced by
@@ -112,13 +115,13 @@ SAVE_DIR=/data/joonhee/visual-latents/cluster_phase3/$RUN_NAME
 
 # ----- Stage 2: TRAINING (upstream src.main, verbatim flags + --lambda_reg) -----
 slack_notify ":dart: upstream-stage3 $ARM training START at $(elapsed_h)"
-echo "[$(date)] [train] torchrun -m src.main --stage avt_v5_stage2 --lambda_reg $LAMBDA_REG"
+echo "[$(date)] [train] torchrun -m src.main --stage sft_stage3 --lambda_reg $LAMBDA_REG"
 
 torchrun --nproc-per-node=4 --master-port=29501 -m src.main \
   --epochs 2 \
   --bsz 1 \
   --grad_accum_steps 32 \
-  --stage "avt_v5_stage2" \
+  --stage sft_stage3 \
   --data_path \
     "$DATA_ROOT/Visual_CoT/train.json" \
     "$DATA_ROOT/CogCoM/train.json" \
