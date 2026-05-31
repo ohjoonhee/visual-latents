@@ -112,6 +112,7 @@ echo "[$(date)] init OK; teacher_latents: $N_TEACHER files"
 
 DATA_ROOT=/data/joonhee/visual-latents/data/Monet-SFT-125K
 SAVE_DIR=/data/joonhee/visual-latents/cluster_phase3/$RUN_NAME
+mkdir -p "$SAVE_DIR"  # upstream src/main.py:37 opens --log_file directly; parent must exist
 
 # ----- Stage 2: TRAINING (upstream src.main, verbatim flags + --lambda_reg) -----
 slack_notify ":dart: upstream-stage3 $ARM training START at $(elapsed_h)"
