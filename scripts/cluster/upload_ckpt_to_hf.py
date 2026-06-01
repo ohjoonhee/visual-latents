@@ -48,6 +48,9 @@ DEFAULT_REPO = "ohjoonhee/vlatents-qwen25vl7b-stage2-repro-v1"
 
 # Files that are training-only state (optimizer, rng, etc.) — useless for
 # inference and bulky enough to bloat the repo. Excluded from upload.
+# NB: DeepSpeed's full optim+model state lives under global_step*/ (90+GB
+# per checkpoint at 7B); the safetensors at the top level are sufficient
+# for inference. Excluding the whole subdir is the cleanest filter.
 INFERENCE_IGNORE = [
     "optimizer*.pt",
     "**/optimizer*.pt",
@@ -58,6 +61,10 @@ INFERENCE_IGNORE = [
     "training_args.bin",
     "*.tmp",
     "*.lock",
+    "global_step*/**",
+    "**/global_step*/**",
+    "latest",
+    "zero_to_fp32.py",
 ]
 
 
