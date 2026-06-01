@@ -43,6 +43,13 @@ export TORCH_HOME=/data/joonhee/.cache/torch
 export TORCH_EXTENSIONS_DIR=/data/joonhee/.cache/torch-extensions
 # HF_HOME inherited from ~/.bashrc
 
+# Disable hf_xet — its Rust file_cleaner.rs panics with
+# `assertion left == right` on this 5GB safetensors shard (jobs 218315,
+# 218318). Different "right" value each retry → not a stale cache,
+# a real concurrency/chunking bug. Forcing the legacy LFS upload path
+# (more battle-tested for >2GB files) sidesteps it entirely.
+export HF_HUB_DISABLE_XET=1
+
 # --- §3-H locked Slack-notify pattern (helper + 3 mandatory messages) ---
 slack_notify () {
   [ -z "${SLACK_WEBHOOK_URL:-}" ] && return 0
