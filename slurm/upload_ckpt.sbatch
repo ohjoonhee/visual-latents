@@ -65,30 +65,38 @@ follow: \`tail -n 200 -F ${ABSLOG}\`"
 : "${REPO:?REPO must be set}"
 NOTES="${NOTES:-}"
 
-# --- Preflight ---
+# --- Preflight: ckpt dir + venv ---
 if [ ! -d "$CKPT_DIR" ]; then
   echo "ERR: ckpt dir MISSING: $CKPT_DIR" >&2
   slack_notify ":x: FAIL ${SLURM_JOB_NAME} (jobid=${SLURM_JOB_ID}) exit=11 — ckpt dir MISSING: \`${CKPT_DIR}\`"
   exit 11
 fi
-if [ -z "${HF_TOKEN:-}" ]; then
-  echo "ERR: HF_TOKEN not set (expected via ~/.env sourced by sb)" >&2
-  slack_notify ":x: FAIL ${SLURM_JOB_NAME} (jobid=${SLURM_JOB_ID}) exit=12 — HF_TOKEN missing in ~/.env"
-  exit 12
-fi
 
-# --- Activate uv venv (~/Monet has huggingface_hub + hf_xet). ---
+# Activate uv venv (~/Monet has huggingface_hub + hf_xet).
 MONET="$HOME/Monet"
 if [ ! -d "$MONET/.venv" ]; then
   echo "ERR: $MONET/.venv missing" >&2
-  slack_notify ":x: FAIL ${SLURM_JOB_NAME} (jobid=${SLURM_JOB_ID}) exit=13 — \`${MONET}/.venv\` missing"
-  exit 13
+  slack_notify ":x: FAIL ${SLURM_JOB_NAME} (jobid=${SLURM_JOB_ID}) exit=12 — \`${MONET}/.venv\` missing"
+  exit 12
 fi
 source "$MONET/.venv/bin/activate"
 
 echo "[$(date)] node=${SLURMD_NODENAME} cwd=$(pwd)"
 echo "[$(date)] python=$(which python)"
 echo "[$(date)] hf_hub=$(python -c 'import huggingface_hub; print(huggingface_hub.__version__)')"
+
+# --- Preflight: HF auth ---
+# Either HF_TOKEN env (sourced from ~/.env by sb) OR a CLI-cached token
+# at ~/.cache/huggingface/token will work. Probe with whoami() so we
+# fail fast if neither path is valid.
+HF_USER="$(python -c 'from huggingface_hub import HfApi; print(HfApi().whoami()["name"])' 2>&1)"
+if [ $? -ne 0 ]; then
+  echo "ERR: HF auth failed — neither HF_TOKEN env nor ~/.cache/huggingface/token works" >&2
+  echo "stderr: $HF_USER" >&2
+  slack_notify ":x: FAIL ${SLURM_JOB_NAME} (jobid=${SLURM_JOB_ID}) exit=13 — HF auth failed"
+  exit 13
+fi
+echo "[$(date)] hf_user=$HF_USER"
 
 # --- Upload ---
 NOTES_ARG=()
