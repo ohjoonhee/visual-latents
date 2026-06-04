@@ -51,6 +51,10 @@ DEFAULT_REPO = "ohjoonhee/vlatents-qwen25vl7b-stage2-repro-v1"
 # NB: DeepSpeed's full optim+model state lives under global_step*/ (90+GB
 # per checkpoint at 7B); the safetensors at the top level are sufficient
 # for inference. Excluding the whole subdir is the cleanest filter.
+# When --ckpt-dir is a run's output_dir (final model in root, plus
+# intermediate checkpoint-N/ subdirs), checkpoint-*/** keeps the upload to
+# just the final model — otherwise upload_large_folder recurses into every
+# checkpoint subdir (a 3-epoch run's SAVE_DIR is ~1.2TB across 10 ckpts).
 INFERENCE_IGNORE = [
     "optimizer*.pt",
     "**/optimizer*.pt",
@@ -63,6 +67,8 @@ INFERENCE_IGNORE = [
     "*.lock",
     "global_step*/**",
     "**/global_step*/**",
+    "checkpoint-*/**",
+    "**/checkpoint-*/**",
     "latest",
     "zero_to_fp32.py",
 ]
