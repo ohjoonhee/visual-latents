@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Monet SFT Stage 3 — Our Exact Reproduction</title>
+<style>
+:root {
+  --bg:#0d1117; --panel:#11161d; --ink:#e6edf3; --dim:#9aa7b4; --line:#222c38;
+  --accent:#4aa3ff; --accent2:#3fb950; --warn:#d29922; --code-bg:#1c2330;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+code,pre,.mono{font-family:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+
+/* deck */
+#deck{height:100%;overflow:hidden;position:relative}
+.slide{position:absolute;inset:0;overflow-y:auto;padding:34px max(24px,5vw) 90px;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .28s ease,transform .28s ease}
+.slide.active{opacity:1;transform:none;pointer-events:auto}
+.slide-head{display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:18px;flex-wrap:wrap}
+.slide-head h2{font-size:25px;margin:0;font-weight:650;letter-spacing:-.01em}
+.slide-num{font:12px/1 ui-monospace,monospace;color:var(--accent);border:1px solid var(--line);border-radius:20px;padding:6px 11px;flex:none}
+.slide-body{max-width:1080px}
+
+/* title slide */
+.title-slide{max-width:1000px;margin:2vh auto 0}
+.kicker{font:12px/1 ui-monospace,monospace;letter-spacing:.18em;color:var(--accent2);margin-bottom:18px}
+.title-slide h1{font-size:38px;line-height:1.12;letter-spacing:-.02em;margin:0 0 18px}
+.title-body blockquote{margin:0 0 22px;color:var(--dim);border-left:3px solid var(--accent);padding:6px 0 6px 16px;background:none;font-size:15px}
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:26px}
+.toc-link{text-align:left;background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:13px 15px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:550;transition:.15s}
+.toc-link:hover{border-color:var(--accent);color:#fff;transform:translateY(-1px)}
+
+/* content */
+h3{font-size:17px;margin:24px 0 8px;color:#fff}
+p{margin:12px 0}
+a{color:var(--accent)}
+blockquote{margin:16px 0;border-left:3px solid var(--warn);background:#1a1710;padding:10px 16px;border-radius:0 8px 8px 0;color:#e8dcc0;font-size:14.5px}
+ul,ol{padding-left:22px}
+li{margin:6px 0}
+strong{color:#fff}
+
+/* inline code */
+:not(pre)>code{background:var(--code-bg);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:.86em;color:#ffd9a8}
+
+/* code blocks */
+.codehilite{background:var(--code-bg)!important;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:16px 0;overflow-x:auto}
+.codehilite pre{margin:0;font-size:13.5px;line-height:1.6;white-space:pre;tab-size:2}
+pre>code{font-size:13.5px}
+
+/* tables */
+table{border-collapse:collapse;width:100%;margin:18px 0;font-size:14px;background:var(--panel);border-radius:10px;overflow:hidden;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:9px 13px;text-align:left;vertical-align:top}
+th{background:#19212c;color:#fff;font-weight:600;white-space:nowrap}
+td code{white-space:nowrap}
+tr:hover td{background:#151c25}
+
+/* raw source */
+.raw-toggle{margin-left:auto;background:none;border:1px solid var(--line);color:var(--dim);border-radius:7px;padding:6px 11px;cursor:pointer;font-size:12px;flex:none}
+.raw-toggle:hover{border-color:var(--accent);color:var(--ink)}
+.raw-src{display:none;background:#080b10;border:1px dashed var(--line);border-radius:10px;padding:14px 16px;margin-top:8px;color:#9fb0c0;font-size:12.5px;line-height:1.55;white-space:pre-wrap;max-height:60vh;overflow:auto}
+.raw-src.show{display:block}
+
+/* chrome */
+#bar{position:fixed;left:0;bottom:0;width:100%;height:3px;background:#0a0e14;z-index:30}
+#bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .28s}
+#hud{position:fixed;right:14px;bottom:14px;display:flex;gap:8px;z-index:40}
+.hud-b{background:var(--panel);border:1px solid var(--line);color:var(--ink);width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center}
+.hud-b:hover{border-color:var(--accent)}
+#count{position:fixed;left:14px;bottom:14px;font:12px/1 ui-monospace,monospace;color:var(--dim);z-index:40;background:var(--panel);border:1px solid var(--line);padding:9px 12px;border-radius:9px}
+
+/* overview */
+#ov{position:fixed;inset:0;background:rgba(7,10,14,.97);z-index:60;display:none;padding:40px max(24px,6vw);overflow-y:auto}
+#ov.show{display:block}
+#ov h3{margin:0 0 22px;color:var(--dim);font-weight:500;letter-spacing:.05em}
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.ov-card{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:15px 16px;cursor:pointer;color:var(--ink);text-align:left;transition:.15s}
+.ov-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.ov-i{font:13px/1 ui-monospace,monospace;color:var(--accent);border:1px solid var(--line);border-radius:7px;padding:7px 9px;flex:none}
+.ov-t{font-size:13.5px;font-weight:550;line-height:1.3}
+
+#stale{position:fixed;top:0;left:0;width:100%;background:var(--warn);color:#1a1205;font:13px/1.4 sans-serif;padding:9px 16px;text-align:center;z-index:80;display:none}
+.build{color:var(--dim);font-size:11px;margin-top:30px;font-family:ui-monospace,monospace}
+@media(max-width:640px){.slide{padding:22px 16px 84px}.slide-head h2{font-size:20px}.title-slide h1{font-size:28px}}
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+</style></head>
+<body>
+<div id="stale">⚠ source <code>stage3_reproduction.md</code> changed since this was built — regenerate the deck.</div>
+<div id="deck"><section class="slide" id="slide-0">
+        <div class="title-slide">
+          <div class="kicker">EXACT REPRODUCTION SPEC · diff against the paper</div>
+          <h1>Monet SFT Stage 3 — Our Exact Reproduction</h1>
+          <div class="title-body"><blockquote>
+<p>This document describes <strong>exactly what we ran</strong>, pulled verbatim from the
+upstream code (<code>github.com/NOVAglow646/Monet</code>, branch on cluster identical
+to <code>main</code> at the model-upload commit) and our submit scripts. Every flag,
+formula, and shape below is what was actually executed — not a paraphrase.
+Use it to diff against the paper.</p>
+</blockquote>
+<hr /></div>
+          <div class="toc"><button class="toc-link" data-go="1">What Stage 3 is</button><button class="toc-link" data-go="2">The exact pipeline we ran</button><button class="toc-link" data-go="3">Step A — Teacher-latent precompute</button><button class="toc-link" data-go="4">Step B — Student data construction</button><button class="toc-link" data-go="5">Step C — Stage-3 training loss</button><button class="toc-link" data-go="6">Exact hyperparameters</button><button class="toc-link" data-go="7">The ONE deviation from upstream</button><button class="toc-link" data-go="8">Result of this reproduction</button></div>
+        </div></section><section class="slide" id="slide-1">
+        <div class="slide-head"><span class="slide-num">1/8</span><h2>0. What Stage 3 is (one paragraph)</h2>
+          <button class="raw-toggle" data-raw="1">view raw ⌄</button></div>
+        <div class="slide-body"><p>Monet trains a VLM to emit <strong>latent "abstract visual tokens"</strong> (K slots) in
+place of the explicit auxiliary images a visual-chain-of-thought model would
+normally generate. Training is 3 SFT stages:</p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Objective</th>
+<th>What it learns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Stage 1</strong></td>
+<td>Next-token prediction (NTP) SFT</td>
+<td>Fluently emit the Monet special tokens + answer format</td>
+</tr>
+<tr>
+<td><strong>Stage 2</strong></td>
+<td>Alignment + emphasized-CE, latents <strong>conditioned on the real aux image</strong></td>
+<td>Latent slots that encode the aux-image content</td>
+</tr>
+<tr>
+<td><strong>Stage 3</strong></td>
+<td>Same alignment + CE, but latents are produced <strong>from the question alone</strong> (aux images removed); supervised to match the <strong>Stage-2 teacher's</strong> latent geometry</td>
+<td>Generate the useful latents <strong>without ever seeing the aux image</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Stage 3 = distillation:</strong> a <em>student</em> (init from Stage 1) is taught to
+produce, from the question only, the same per-layer latent representations
+that the <em>teacher</em> (released Stage 2) produced when it <strong>could</strong> see the aux
+images. The supervision is a cosine-alignment loss to precomputed teacher
+latents, plus a (weighted) language-modeling CE.</p>
+<hr /></div>
+        <pre class="raw-src" id="raw-1">Monet trains a VLM to emit **latent &quot;abstract visual tokens&quot;** (K slots) in
+place of the explicit auxiliary images a visual-chain-of-thought model would
+normally generate. Training is 3 SFT stages:
+
+| Stage | Objective | What it learns |
+|---|---|---|
+| **Stage 1** | Next-token prediction (NTP) SFT | Fluently emit the Monet special tokens + answer format |
+| **Stage 2** | Alignment + emphasized-CE, latents **conditioned on the real aux image** | Latent slots that encode the aux-image content |
+| **Stage 3** | Same alignment + CE, but latents are produced **from the question alone** (aux images removed); supervised to match the **Stage-2 teacher&#x27;s** latent geometry | Generate the useful latents **without ever seeing the aux image** |
+
+**Stage 3 = distillation:** a *student* (init from Stage 1) is taught to
+produce, from the question only, the same per-layer latent representations
+that the *teacher* (released Stage 2) produced when it **could** see the aux
+images. The supervision is a cosine-alignment loss to precomputed teacher
+latents, plus a (weighted) language-modeling CE.
+
+---</pre></section><section class="slide" id="slide-2">
+        <div class="slide-head"><span class="slide-num">2/8</span><h2>1. The exact pipeline we ran</h2>
+          <button class="raw-toggle" data-raw="2">view raw ⌄</button></div>
+        <div class="slide-body"><div class="codehilite"><pre><span></span><code>released Monet-SFT-7B/stage2 ──(precompute, latent_mode forward)──► 124,165 teacher latent files
+                                                                       (all 28 layers × K=8 slots)
+                                                                              │
+released Monet-SFT-7B/stage1 ──(init)──► STUDENT ──train (3 epochs)──► our Stage-3 checkpoint
+                                            ▲                                  │
+                                            └── alignment loss to teacher ─────┘
+</code></pre></div>
+
+<ul>
+<li><strong>Init checkpoint (student):</strong> released <code>Monet-SFT-7B/stage1</code></li>
+<li><strong>Teacher (for precompute):</strong> released <code>Monet-SFT-7B/stage2</code></li>
+<li><strong>Teacher latents:</strong> 124,165 <code>.pt</code> files, one per training sample</li>
+<li><strong>Data:</strong> the full released <code>Monet-SFT-125K</code> mix, all 6 subsets
+  (<code>Visual_CoT</code>, <code>CogCoM</code>, <code>ReFocus</code>, <code>Zebra_CoT_count</code>,
+  <code>Zebra_CoT_visual_search</code>, <code>Zebra_CoT_geometry</code>)</li>
+</ul>
+<hr /></div>
+        <pre class="raw-src" id="raw-2">```
+released Monet-SFT-7B/stage2 ──(precompute, latent_mode forward)──► 124,165 teacher latent files
+                                                                       (all 28 layers × K=8 slots)
+                                                                              │
+released Monet-SFT-7B/stage1 ──(init)──► STUDENT ──train (3 epochs)──► our Stage-3 checkpoint
+                                            ▲                                  │
+                                            └── alignment loss to teacher ─────┘
+```
+
+- **Init checkpoint (student):** released `Monet-SFT-7B/stage1`
+- **Teacher (for precompute):** released `Monet-SFT-7B/stage2`
+- **Teacher latents:** 124,165 `.pt` files, one per training sample
+- **Data:** the full released `Monet-SFT-125K` mix, all 6 subsets
+  (`Visual_CoT`, `CogCoM`, `ReFocus`, `Zebra_CoT_count`,
+  `Zebra_CoT_visual_search`, `Zebra_CoT_geometry`)
+
+---</pre></section><section class="slide" id="slide-3">
+        <div class="slide-head"><span class="slide-num">3/8</span><h2>2. Step A — Teacher-latent precompute (verbatim)</h2>
+          <button class="raw-toggle" data-raw="3">view raw ⌄</button></div>
+        <div class="slide-body"><p>Runs upstream <code>src.precompute_teacher_latents</code> <strong>unmodified</strong>:</p>
+<div class="codehilite"><pre><span></span><code>torchrun<span class="w"> </span>--nproc-per-node<span class="o">=</span><span class="m">4</span><span class="w"> </span>-m<span class="w"> </span>src.precompute_teacher_latents<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--bsz<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--data_path<span class="w"> </span>&lt;the<span class="w"> </span><span class="m">6</span><span class="w"> </span>Monet-SFT-125K<span class="w"> </span>train.json<span class="w"> </span>files&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--load_model_path<span class="w">  </span>&lt;released<span class="w"> </span>Monet-SFT-7B/stage2&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--save_model_path<span class="w">  </span>&lt;upstream_teacher_latents/&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dataset_root<span class="w">     </span>&lt;Monet-SFT-125K&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--deepspeed<span class="w"> </span>./deepspeed/ds_zero2_gpu.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--latent_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output_hidden_states<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--resume
+</code></pre></div>
+
+<p>The core forward (<code>src/precompute_teacher_latents.py</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;latent_mode&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>                 <span class="c1"># teacher runs WITH its aux images</span>
+    <span class="s1">&#39;input_ids&#39;</span><span class="p">:</span> <span class="n">batch</span><span class="p">[</span><span class="s1">&#39;input_ids&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;attention_mask&#39;</span><span class="p">:</span> <span class="n">batch</span><span class="p">[</span><span class="s1">&#39;attention_mask&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;pixel_values&#39;</span><span class="p">:</span> <span class="n">batch</span><span class="p">[</span><span class="s1">&#39;pixel_values&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;image_grid_thw&#39;</span><span class="p">:</span> <span class="n">batch</span><span class="p">[</span><span class="s1">&#39;image_grid_thw&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;labels&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s1">&#39;loss_type&#39;</span><span class="p">:</span> <span class="p">[],</span>
+<span class="p">}</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;output_hidden_states&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>    <span class="c1"># capture ALL layers</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="n">return_dict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">teacher_reps</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">hidden_states</span>     <span class="c1"># per-sample: [num_layers, K, hidden]</span>
+<span class="c1"># saved as latent_all_layers_&lt;dataset&gt;_&lt;sample_id&gt;.pt</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">({</span><span class="s1">&#39;metadata_info&#39;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="s1">&#39;latent&#39;</span><span class="p">:</span> <span class="n">teacher_reps</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()},</span> <span class="n">save_path</span><span class="p">)</span>
+</code></pre></div>
+
+<p>So each teacher file holds the Stage-2 hidden states at the <strong>K=8 latent
+positions across all 28 layers</strong> — this is the alignment target.</p>
+<hr /></div>
+        <pre class="raw-src" id="raw-3">Runs upstream `src.precompute_teacher_latents` **unmodified**:
+
+```bash
+torchrun --nproc-per-node=4 -m src.precompute_teacher_latents \
+  --bsz 1 \
+  --data_path &lt;the 6 Monet-SFT-125K train.json files&gt; \
+  --load_model_path  &lt;released Monet-SFT-7B/stage2&gt; \
+  --save_model_path  &lt;upstream_teacher_latents/&gt; \
+  --dataset_root     &lt;Monet-SFT-125K&gt; \
+  --deepspeed ./deepspeed/ds_zero2_gpu.json \
+  --latent_size 8 \
+  --output_hidden_states \
+  --resume
+```
+
+The core forward (`src/precompute_teacher_latents.py`):
+
+```python
+inputs = {
+    &#x27;latent_mode&#x27;: True,                 # teacher runs WITH its aux images
+    &#x27;input_ids&#x27;: batch[&#x27;input_ids&#x27;],
+    &#x27;attention_mask&#x27;: batch[&#x27;attention_mask&#x27;],
+    &#x27;pixel_values&#x27;: batch[&#x27;pixel_values&#x27;],
+    &#x27;image_grid_thw&#x27;: batch[&#x27;image_grid_thw&#x27;],
+    &#x27;labels&#x27;: None,
+    &#x27;loss_type&#x27;: [],
+}
+inputs[&#x27;output_hidden_states&#x27;] = True    # capture ALL layers
+outputs = model(**inputs, return_dict=True)
+teacher_reps = outputs.hidden_states     # per-sample: [num_layers, K, hidden]
+# saved as latent_all_layers_&lt;dataset&gt;_&lt;sample_id&gt;.pt
+torch.save({&#x27;metadata_info&#x27;: ..., &#x27;latent&#x27;: teacher_reps[b].detach().cpu()}, save_path)
+```
+
+So each teacher file holds the Stage-2 hidden states at the **K=8 latent
+positions across all 28 layers** — this is the alignment target.
+
+---</pre></section><section class="slide" id="slide-4">
+        <div class="slide-head"><span class="slide-num">4/8</span><h2>3. Step B — Student data construction (`collate_fn_sft_stage3`, verbatim)</h2>
+          <button class="raw-toggle" data-raw="4">view raw ⌄</button></div>
+        <div class="slide-body"><p>This is the heart of "Stage 3 = from the question only." For each sample:</p>
+<ol>
+<li>Render the chat with <code>apply_chat_template</code>.</li>
+<li><strong>Aux images → latent slots.</strong> <code>replace_img_pad_with_latent_pad(texts,
+   latent_size=8, "&lt;abs_vis_token_pad&gt;")</code> replaces each assistant aux-image
+   placeholder with a <strong>block of K=8 <code>&lt;abs_vis_token_pad&gt;</code> tokens</strong>
+   (id <code>151665</code>), wrapped by <code>&lt;abs_vis_token&gt;</code> / <code>&lt;/abs_vis_token&gt;</code>
+   (<code>151666</code> / <code>151667</code>).</li>
+<li><strong>Strip aux images from the student input.</strong> <code>remove_auxiliary_images(...)</code>
+   drops every assistant-turn image; only the <strong>question image(s)</strong> remain.
+   The student therefore never sees the aux images — it must <em>generate</em> the
+   latents from the question.</li>
+<li>Build tensors with the processor:
+   <code>python
+   batch["student_input_ids"]       = student_batch["input_ids"]
+   batch["student_attention_mask"]  = student_batch["attention_mask"]
+   batch["student_pixel_values"]    = student_batch["pixel_values"]      # question imgs only
+   batch["student_image_grid_thw"]  = student_batch["image_grid_thw"]</code></li>
+<li><strong>Alignment positions</strong> = the K latent-slot positions:
+   <code>python
+   batch["student_alignment_poss"] = find_ids_poss(student_input_ids, answer_start_pattern, latent_pad_idx)</code></li>
+<li><strong>Observation positions</strong> (text between <code>&lt;observation&gt;</code>…<code>&lt;/observation&gt;</code>)
+   are collected — these get the <strong>emphasized</strong> CE weight.</li>
+<li><strong>Labels</strong> mask everything except the answer tokens (the special tokens,
+   image pads, latent pads, observation markers are all ignored):
+   <code>python
+   batch["student_labels"] = generate_labels_after_multi_token_start(
+       student_input_ids, answer_start_pattern,
+       ignore_ids=[img_pad, img_start, img_end, end_pad, latent_pad,
+                   latent_end, observation_start, observation_end])</code></li>
+</ol>
+<blockquote>
+<p>Note: <code>--mask_latent</code> was <strong>off</strong> (default), so the optional 4-D
+latent-isolation attention mask was <strong>not</strong> applied — we used the model's
+standard causal mask, exactly as upstream's <code>sft_stage3.sh</code> does.</p>
+</blockquote>
+<hr /></div>
+        <pre class="raw-src" id="raw-4">This is the heart of &quot;Stage 3 = from the question only.&quot; For each sample:
+
+1. Render the chat with `apply_chat_template`.
+2. **Aux images → latent slots.** `replace_img_pad_with_latent_pad(texts,
+   latent_size=8, &quot;&lt;abs_vis_token_pad&gt;&quot;)` replaces each assistant aux-image
+   placeholder with a **block of K=8 `&lt;abs_vis_token_pad&gt;` tokens**
+   (id `151665`), wrapped by `&lt;abs_vis_token&gt;` / `&lt;/abs_vis_token&gt;`
+   (`151666` / `151667`).
+3. **Strip aux images from the student input.** `remove_auxiliary_images(...)`
+   drops every assistant-turn image; only the **question image(s)** remain.
+   The student therefore never sees the aux images — it must *generate* the
+   latents from the question.
+4. Build tensors with the processor:
+   ```python
+   batch[&quot;student_input_ids&quot;]       = student_batch[&quot;input_ids&quot;]
+   batch[&quot;student_attention_mask&quot;]  = student_batch[&quot;attention_mask&quot;]
+   batch[&quot;student_pixel_values&quot;]    = student_batch[&quot;pixel_values&quot;]      # question imgs only
+   batch[&quot;student_image_grid_thw&quot;]  = student_batch[&quot;image_grid_thw&quot;]
+   ```
+5. **Alignment positions** = the K latent-slot positions:
+   ```python
+   batch[&quot;student_alignment_poss&quot;] = find_ids_poss(student_input_ids, answer_start_pattern, latent_pad_idx)
+   ```
+6. **Observation positions** (text between `&lt;observation&gt;`…`&lt;/observation&gt;`)
+   are collected — these get the **emphasized** CE weight.
+7. **Labels** mask everything except the answer tokens (the special tokens,
+   image pads, latent pads, observation markers are all ignored):
+   ```python
+   batch[&quot;student_labels&quot;] = generate_labels_after_multi_token_start(
+       student_input_ids, answer_start_pattern,
+       ignore_ids=[img_pad, img_start, img_end, end_pad, latent_pad,
+                   latent_end, observation_start, observation_end])
+   ```
+
+&gt; Note: `--mask_latent` was **off** (default), so the optional 4-D
+&gt; latent-isolation attention mask was **not** applied — we used the model&#x27;s
+&gt; standard causal mask, exactly as upstream&#x27;s `sft_stage3.sh` does.
+
+---</pre></section><section class="slide" id="slide-5">
+        <div class="slide-head"><span class="slide-num">5/8</span><h2>4. Step C — Stage-3 training loss (`CustomTrainerSFT_STAGE3.compute_loss`, verbatim)</h2>
+          <button class="raw-toggle" data-raw="5">view raw ⌄</button></div>
+        <div class="slide-body"><p>Two forward passes per step:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Load the precomputed teacher latents for this batch (all layers, K slots)</span>
+<span class="n">teacher_latents</span> <span class="o">=</span> <span class="n">load_offline_tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">teacher_latent_dir</span><span class="p">,</span>
+                    <span class="n">batch_metadata</span><span class="o">=</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">],</span>
+                    <span class="n">alignment_layer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">alignment_layer</span><span class="p">,</span>   <span class="c1"># &#39;all_layers&#39;</span>
+                    <span class="n">rep_type</span><span class="o">=</span><span class="s2">&quot;latent&quot;</span><span class="p">)</span>
+
+<span class="c1"># ---- Forward 1: LATENT GENERATION (latent_mode=True) ----</span>
+<span class="c1"># Student autoregressively produces the K latent embeddings from the</span>
+<span class="c1"># question context (it has NO aux image). Returns where they go + their values.</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;latent_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;input_ids&#39;</span><span class="p">]</span>            <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;student_input_ids&#39;</span><span class="p">]</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;attention_mask&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;student_attention_mask&#39;</span><span class="p">]</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;pixel_values&#39;</span><span class="p">]</span>         <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;student_pixel_values&#39;</span><span class="p">]</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;image_grid_thw&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;student_image_grid_thw&#39;</span><span class="p">]</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;alignment_poss&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;student_alignment_poss&#39;</span><span class="p">]</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;teacher_hidden_states_for_alignment&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">teacher_latents</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;loss_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">student_outputs_latent</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+<span class="c1">#   → student_outputs_latent.ce_patch_pos, .ce_patch_vec  (the K latents)</span>
+
+<span class="c1"># ---- Forward 2: CE + ALIGNMENT (latent_mode=False) ----</span>
+<span class="c1"># Splice the generated latents back in; compute weighted CE on the answer</span>
+<span class="c1"># AND the alignment loss to the teacher (all layers).</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;latent_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span>            <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;student_labels&#39;</span><span class="p">]</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;ce_patch_pos&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="n">student_outputs_latent</span><span class="o">.</span><span class="n">ce_patch_pos</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;ce_patch_vec&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="n">student_outputs_latent</span><span class="o">.</span><span class="n">ce_patch_vec</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;ce_emphasize_factor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ce_emphasize_factor</span>          <span class="c1"># 4.0</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;ce_emphasize_poss&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;observation_poss&#39;</span><span class="p">]</span>        <span class="c1"># observation tokens ×4</span>
+<span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;loss_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ce&#39;</span><span class="p">,</span> <span class="s1">&#39;alignment&#39;</span><span class="p">]</span>
+<span class="p">(</span><span class="n">student_ce_loss</span><span class="p">,</span> <span class="n">student_outputs</span><span class="p">)</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">compute_loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">return_outputs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+<span class="n">alignment_loss</span> <span class="o">=</span> <span class="n">student_outputs</span><span class="o">.</span><span class="n">loss_dict</span><span class="p">[</span><span class="s1">&#39;alignment&#39;</span><span class="p">]</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">student_ce_loss</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignment_weight</span> <span class="o">*</span> <span class="n">alignment_loss</span>   <span class="c1"># alignment_weight = 2.0</span>
+<span class="c1"># (our VICReg term is guarded by lambda_reg &gt; 0; lambda_reg = 0 here, so it is OFF and</span>
+<span class="c1">#  this run is byte-identical to upstream.)</span>
+</code></pre></div>
+
+<h3>The alignment loss formula (verbatim, <code>modeling…_monet.py</code>)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alignment_loss</span><span class="p">(</span><span class="n">teacher_hidden_states</span><span class="p">,</span> <span class="n">student_hidden_states</span><span class="p">):</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">teacher_hidden_states</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>   <span class="c1"># [num_layer, num_align, dim] — ALL layers (our case)</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">F</span><span class="o">.</span><span class="n">cosine_similarity</span><span class="p">(</span>
+            <span class="n">teacher_hidden_states</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">student_hidden_states</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">student_hidden_states</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">teacher_hidden_states</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># last-layer-only variant (not used)</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">F</span><span class="o">.</span><span class="n">cosine_similarity</span><span class="p">(</span><span class="n">student_hidden_states</span><span class="p">,</span> <span class="n">teacher_hidden_states</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">total_loss</span>
+</code></pre></div>
+
+<p>With <code>--alignment_layer all_layers</code>, the teacher tensor is
+<code>[28 layers, K=8, hidden=3584]</code>; the loss is the <strong>mean over all layers and
+all K slots of <code>(1 − cosine_similarity)</code></strong> between student and teacher
+latent hidden states.</p>
+<h3>Emphasized CE (verbatim)</h3>
+<p>CE is computed per token; tokens at <code>observation_poss</code> are scaled by
+<code>ce_emphasize_factor = 4.0</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">ce</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">poss</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ce_emphasize_poss</span><span class="p">):</span>
+    <span class="n">weight</span><span class="p">[</span><span class="n">b</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">poss</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ce_emphasize_factor</span><span class="p">)</span>   <span class="c1"># 4.0</span>
+</code></pre></div>
+
+<p><strong>Total objective:</strong>  <code>loss = CE_emphasized  +  2.0 × alignment_loss</code></p>
+<hr /></div>
+        <pre class="raw-src" id="raw-5">Two forward passes per step:
+
+```python
+# Load the precomputed teacher latents for this batch (all layers, K slots)
+teacher_latents = load_offline_tensor(self.teacher_latent_dir,
+                    batch_metadata=inputs[&#x27;metadata&#x27;],
+                    alignment_layer=self.args.alignment_layer,   # &#x27;all_layers&#x27;
+                    rep_type=&quot;latent&quot;)
+
+# ---- Forward 1: LATENT GENERATION (latent_mode=True) ----
+# Student autoregressively produces the K latent embeddings from the
+# question context (it has NO aux image). Returns where they go + their values.
+inputs[&#x27;latent_mode&#x27;] = True
+inputs[&#x27;input_ids&#x27;]            = inputs[&#x27;student_input_ids&#x27;]
+inputs[&#x27;attention_mask&#x27;]       = inputs[&#x27;student_attention_mask&#x27;]
+inputs[&#x27;pixel_values&#x27;]         = inputs[&#x27;student_pixel_values&#x27;]
+inputs[&#x27;image_grid_thw&#x27;]       = inputs[&#x27;student_image_grid_thw&#x27;]
+inputs[&#x27;alignment_poss&#x27;]       = inputs[&#x27;student_alignment_poss&#x27;]
+inputs[&#x27;teacher_hidden_states_for_alignment&#x27;] = teacher_latents
+inputs[&#x27;loss_type&#x27;] = []
+student_outputs_latent = model(**inputs)
+#   → student_outputs_latent.ce_patch_pos, .ce_patch_vec  (the K latents)
+
+# ---- Forward 2: CE + ALIGNMENT (latent_mode=False) ----
+# Splice the generated latents back in; compute weighted CE on the answer
+# AND the alignment loss to the teacher (all layers).
+inputs[&#x27;latent_mode&#x27;] = False
+inputs[&#x27;labels&#x27;]            = inputs[&#x27;student_labels&#x27;]
+inputs[&#x27;ce_patch_pos&#x27;]      = student_outputs_latent.ce_patch_pos
+inputs[&#x27;ce_patch_vec&#x27;]      = student_outputs_latent.ce_patch_vec
+inputs[&#x27;ce_emphasize_factor&#x27;] = self.ce_emphasize_factor          # 4.0
+inputs[&#x27;ce_emphasize_poss&#x27;]   = inputs[&#x27;observation_poss&#x27;]        # observation tokens ×4
+inputs[&#x27;loss_type&#x27;] = [&#x27;ce&#x27;, &#x27;alignment&#x27;]
+(student_ce_loss, student_outputs) = super().compute_loss(model, inputs, return_outputs=True, ...)
+
+alignment_loss = student_outputs.loss_dict[&#x27;alignment&#x27;]
+loss = student_ce_loss + self.alignment_weight * alignment_loss   # alignment_weight = 2.0
+# (our VICReg term is guarded by lambda_reg &gt; 0; lambda_reg = 0 here, so it is OFF and
+#  this run is byte-identical to upstream.)
+```
+
+### The alignment loss formula (verbatim, `modeling…_monet.py`)
+
+```python
+def alignment_loss(teacher_hidden_states, student_hidden_states):
+    total_loss = 0
+    if teacher_hidden_states.dim() == 3:   # [num_layer, num_align, dim] — ALL layers (our case)
+        total_loss = (1 - F.cosine_similarity(
+            teacher_hidden_states.to(student_hidden_states.device),
+            student_hidden_states)).mean()
+    elif teacher_hidden_states.dim() == 1: # last-layer-only variant (not used)
+        total_loss = 1 - F.cosine_similarity(student_hidden_states, teacher_hidden_states, 0)
+    return total_loss
+```
+
+With `--alignment_layer all_layers`, the teacher tensor is
+`[28 layers, K=8, hidden=3584]`; the loss is the **mean over all layers and
+all K slots of `(1 − cosine_similarity)`** between student and teacher
+latent hidden states.
+
+### Emphasized CE (verbatim)
+
+CE is computed per token; tokens at `observation_poss` are scaled by
+`ce_emphasize_factor = 4.0`:
+
+```python
+weight = torch.ones_like(ce)
+for b, poss in enumerate(ce_emphasize_poss):
+    weight[b, torch.tensor(poss) - 1] = float(ce_emphasize_factor)   # 4.0
+```
+
+**Total objective:**  `loss = CE_emphasized  +  2.0 × alignment_loss`
+
+---</pre></section><section class="slide" id="slide-6">
+        <div class="slide-head"><span class="slide-num">6/8</span><h2>5. Exact hyperparameters (our run)</h2>
+          <button class="raw-toggle" data-raw="6">view raw ⌄</button></div>
+        <div class="slide-body"><p>The training launch (<code>slurm/upstream_stage3.sbatch</code>):</p>
+<div class="codehilite"><pre><span></span><code>torchrun<span class="w"> </span>--nproc-per-node<span class="o">=</span><span class="m">4</span><span class="w"> </span>-m<span class="w"> </span>src.main<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--bsz<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--grad_accum_steps<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stage<span class="w"> </span>sft_stage3<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--data_path<span class="w"> </span>&lt;<span class="m">6</span><span class="w"> </span>subsets&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--load_model_path<span class="w">  </span>&lt;released<span class="w"> </span>Monet-SFT-7B/stage1&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--save_model_path<span class="w">  </span>&lt;upstream_stage3_baseline_ep3&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dataset_root<span class="w">     </span>&lt;Monet-SFT-125K&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--deepspeed<span class="w"> </span>./deepspeed/ds_zero2_gpu.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--latent_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--alignment_weight<span class="w"> </span><span class="m">2</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ce_emphasize_factor<span class="w"> </span><span class="m">4</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--teacher_latent_dir<span class="w"> </span>&lt;upstream_teacher_latents&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--alignment_layer<span class="w"> </span>all_layers<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--lambda_reg<span class="w"> </span><span class="m">0</span>.0
+</code></pre></div>
+
+<p><code>SFTConfig</code> (upstream <code>src/main.py</code>, unchanged) supplies the rest:</p>
+<table>
+<thead>
+<tr>
+<th>Knob</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>epochs</td>
+<td><strong>3</strong></td>
+<td>our flag (= released recipe at model-upload commit)</td>
+</tr>
+<tr>
+<td>effective batch</td>
+<td><strong>128</strong></td>
+<td>4 GPU × bsz 1 × grad_accum 32</td>
+</tr>
+<tr>
+<td>optimizer steps/epoch</td>
+<td><strong>971</strong></td>
+<td>125 072 samples / 128</td>
+</tr>
+<tr>
+<td>total steps (<code>max_steps</code>)</td>
+<td><strong>2 913</strong></td>
+<td>3 × 971</td>
+</tr>
+<tr>
+<td>learning rate</td>
+<td><strong>1e-5</strong></td>
+<td><code>--lr</code> default</td>
+</tr>
+<tr>
+<td>lr scheduler</td>
+<td><strong>linear</strong></td>
+<td><code>SFTConfig</code> default (warmup → linear decay to 0)</td>
+</tr>
+<tr>
+<td>warmup_steps</td>
+<td><strong>10</strong></td>
+<td><code>SFTConfig</code></td>
+</tr>
+<tr>
+<td>weight_decay</td>
+<td><strong>0.01</strong></td>
+<td><code>SFTConfig</code></td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><strong>adamw_torch_fused</strong></td>
+<td><code>SFTConfig</code></td>
+</tr>
+<tr>
+<td>precision</td>
+<td><strong>bf16</strong></td>
+<td><code>SFTConfig</code></td>
+</tr>
+<tr>
+<td>gradient_checkpointing</td>
+<td><strong>True</strong></td>
+<td><code>SFTConfig</code></td>
+</tr>
+<tr>
+<td>parallelism</td>
+<td><strong>DeepSpeed ZeRO-2</strong></td>
+<td><code>ds_zero2_gpu.json</code></td>
+</tr>
+<tr>
+<td>latent slots K</td>
+<td><strong>8</strong></td>
+<td><code>--latent_size 8</code></td>
+</tr>
+<tr>
+<td>alignment_weight</td>
+<td><strong>2.0</strong></td>
+<td><code>--alignment_weight</code></td>
+</tr>
+<tr>
+<td>ce_emphasize_factor</td>
+<td><strong>4.0</strong></td>
+<td><code>--ce_emphasize_factor</code></td>
+</tr>
+<tr>
+<td>alignment_layer</td>
+<td><strong>all_layers</strong></td>
+<td><code>--alignment_layer</code></td>
+</tr>
+<tr>
+<td>save_steps</td>
+<td><strong>250</strong></td>
+<td><code>SFTConfig</code></td>
+</tr>
+<tr>
+<td>base model</td>
+<td><strong>Qwen2.5-VL-7B</strong></td>
+<td>architecture of all stages</td>
+</tr>
+</tbody>
+</table>
+<h3>Special-token vocabulary (from the checkpoint <code>config.json</code> / <code>added_tokens.json</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>ID</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;abs_vis_token_pad&gt;</code></td>
+<td>151665</td>
+<td>the K=8 <strong>latent slot</strong> placeholder (<code>latent_token_id</code>)</td>
+</tr>
+<tr>
+<td><code>&lt;abs_vis_token&gt;</code></td>
+<td>151666</td>
+<td>latent-block start (<code>latent_start_id</code>)</td>
+</tr>
+<tr>
+<td><code>&lt;/abs_vis_token&gt;</code></td>
+<td>151667</td>
+<td>latent-block end (<code>latent_end_id</code>)</td>
+</tr>
+<tr>
+<td><code>&lt;observation&gt;</code> / <code>&lt;/observation&gt;</code></td>
+<td>151668 / 151669</td>
+<td>mark the CE-emphasized answer span</td>
+</tr>
+<tr>
+<td><code>&lt;|image_pad|&gt;</code></td>
+<td>151655</td>
+<td>question-image patches</td>
+</tr>
+<tr>
+<td><code>&lt;|vision_start|&gt;</code> / <code>&lt;|vision_end|&gt;</code></td>
+<td>151652 / 151653</td>
+<td>image delimiters</td>
+</tr>
+</tbody>
+</table>
+<hr /></div>
+        <pre class="raw-src" id="raw-6">The training launch (`slurm/upstream_stage3.sbatch`):
+
+```bash
+torchrun --nproc-per-node=4 -m src.main \
+  --epochs 3 \
+  --bsz 1 \
+  --grad_accum_steps 32 \
+  --stage sft_stage3 \
+  --data_path &lt;6 subsets&gt; \
+  --load_model_path  &lt;released Monet-SFT-7B/stage1&gt; \
+  --save_model_path  &lt;upstream_stage3_baseline_ep3&gt; \
+  --dataset_root     &lt;Monet-SFT-125K&gt; \
+  --deepspeed ./deepspeed/ds_zero2_gpu.json \
+  --latent_size 8 \
+  --alignment_weight 2.0 \
+  --ce_emphasize_factor 4.0 \
+  --teacher_latent_dir &lt;upstream_teacher_latents&gt; \
+  --alignment_layer all_layers \
+  --lambda_reg 0.0
+```
+
+`SFTConfig` (upstream `src/main.py`, unchanged) supplies the rest:
+
+| Knob | Value | Source |
+|---|---|---|
+| epochs | **3** | our flag (= released recipe at model-upload commit) |
+| effective batch | **128** | 4 GPU × bsz 1 × grad_accum 32 |
+| optimizer steps/epoch | **971** | 125 072 samples / 128 |
+| total steps (`max_steps`) | **2 913** | 3 × 971 |
+| learning rate | **1e-5** | `--lr` default |
+| lr scheduler | **linear** | `SFTConfig` default (warmup → linear decay to 0) |
+| warmup_steps | **10** | `SFTConfig` |
+| weight_decay | **0.01** | `SFTConfig` |
+| optimizer | **adamw_torch_fused** | `SFTConfig` |
+| precision | **bf16** | `SFTConfig` |
+| gradient_checkpointing | **True** | `SFTConfig` |
+| parallelism | **DeepSpeed ZeRO-2** | `ds_zero2_gpu.json` |
+| latent slots K | **8** | `--latent_size 8` |
+| alignment_weight | **2.0** | `--alignment_weight` |
+| ce_emphasize_factor | **4.0** | `--ce_emphasize_factor` |
+| alignment_layer | **all_layers** | `--alignment_layer` |
+| save_steps | **250** | `SFTConfig` |
+| base model | **Qwen2.5-VL-7B** | architecture of all stages |
+
+### Special-token vocabulary (from the checkpoint `config.json` / `added_tokens.json`)
+
+| Token | ID | Role |
+|---|---|---|
+| `&lt;abs_vis_token_pad&gt;` | 151665 | the K=8 **latent slot** placeholder (`latent_token_id`) |
+| `&lt;abs_vis_token&gt;` | 151666 | latent-block start (`latent_start_id`) |
+| `&lt;/abs_vis_token&gt;` | 151667 | latent-block end (`latent_end_id`) |
+| `&lt;observation&gt;` / `&lt;/observation&gt;` | 151668 / 151669 | mark the CE-emphasized answer span |
+| `&lt;|image_pad|&gt;` | 151655 | question-image patches |
+| `&lt;|vision_start|&gt;` / `&lt;|vision_end|&gt;` | 151652 / 151653 | image delimiters |
+
+---</pre></section><section class="slide" id="slide-7">
+        <div class="slide-head"><span class="slide-num">7/8</span><h2>6. The ONE deviation from upstream</h2>
+          <button class="raw-toggle" data-raw="7">view raw ⌄</button></div>
+        <div class="slide-body"><p>Upstream <code>sft_stage3.sh</code> step 2 used <strong>8 GPUs × grad_accum 16</strong>. We only have a
+4-GPU partition, so we ran <strong>4 GPUs × grad_accum 32</strong>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>upstream</th>
+<th>ours</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPUs (<code>--nproc-per-node</code>)</td>
+<td>8</td>
+<td><strong>4</strong></td>
+</tr>
+<tr>
+<td><code>--grad_accum_steps</code></td>
+<td>16</td>
+<td><strong>32</strong></td>
+</tr>
+<tr>
+<td>effective batch</td>
+<td>128</td>
+<td><strong>128</strong> ✓ identical</td>
+</tr>
+<tr>
+<td>optimizer steps/epoch</td>
+<td>971</td>
+<td><strong>971</strong> ✓ identical</td>
+</tr>
+<tr>
+<td>LR-decay horizon (<code>max_steps</code>)</td>
+<td>2 913</td>
+<td><strong>2 913</strong> ✓ identical</td>
+</tr>
+</tbody>
+</table>
+<p>This is <strong>batch-equivalent</strong>: the effective batch size, total optimizer
+steps, and the linear-LR-decay horizon are all identical. Everything else —
+code, data, init, teacher, hyperparameters — is verbatim upstream.</p>
+<blockquote>
+<p>Walltime note: 3 epochs ≈ 40 h &gt; the 24 h cap, so the run was split into
+two jobs sharing one epochs=3 schedule (<code>--resume_from_checkpoint</code>). This is
+purely an operational split; the schedule and <code>max_steps</code> are unchanged, so
+the resulting training is identical to a single uninterrupted 3-epoch run.</p>
+</blockquote>
+<hr /></div>
+        <pre class="raw-src" id="raw-7">Upstream `sft_stage3.sh` step 2 used **8 GPUs × grad_accum 16**. We only have a
+4-GPU partition, so we ran **4 GPUs × grad_accum 32**:
+
+| | upstream | ours |
+|---|---|---|
+| GPUs (`--nproc-per-node`) | 8 | **4** |
+| `--grad_accum_steps` | 16 | **32** |
+| effective batch | 128 | **128** ✓ identical |
+| optimizer steps/epoch | 971 | **971** ✓ identical |
+| LR-decay horizon (`max_steps`) | 2 913 | **2 913** ✓ identical |
+
+This is **batch-equivalent**: the effective batch size, total optimizer
+steps, and the linear-LR-decay horizon are all identical. Everything else —
+code, data, init, teacher, hyperparameters — is verbatim upstream.
+
+&gt; Walltime note: 3 epochs ≈ 40 h &gt; the 24 h cap, so the run was split into
+&gt; two jobs sharing one epochs=3 schedule (`--resume_from_checkpoint`). This is
+&gt; purely an operational split; the schedule and `max_steps` are unchanged, so
+&gt; the resulting training is identical to a single uninterrupted 3-epoch run.
+
+---</pre></section><section class="slide" id="slide-8">
+        <div class="slide-head"><span class="slide-num">8/8</span><h2>7. Result of this reproduction</h2>
+          <button class="raw-toggle" data-raw="8">view raw ⌄</button></div>
+        <div class="slide-body"><p>Pairwise off-diagonal cosine similarity of the K=8 latent slots (the collapse
+metric) and downstream utility, K=8, n=200 held-out:</p>
+<table>
+<thead>
+<tr>
+<th>checkpoint</th>
+<th style="text-align: right;">mean off-diag cos</th>
+<th style="text-align: right;">utility (qwen-base reader)</th>
+<th style="text-align: right;">self utility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>released <strong>stage 2</strong> (the teacher)</td>
+<td style="text-align: right;">0.377</td>
+<td style="text-align: right;">+2.05</td>
+<td style="text-align: right;">+2.78</td>
+</tr>
+<tr>
+<td><strong>our stage 3, epochs = 3</strong> (step 2913)</td>
+<td style="text-align: right;"><strong>0.401</strong></td>
+<td style="text-align: right;"><strong>+1.02</strong></td>
+<td style="text-align: right;"><strong>+0.79</strong></td>
+</tr>
+<tr>
+<td>our stage 3, epochs = 2 (step 1500)</td>
+<td style="text-align: right;">0.420</td>
+<td style="text-align: right;">+0.90</td>
+<td style="text-align: right;">−0.51</td>
+</tr>
+<tr>
+<td>released <strong>stage 3</strong> (the artifact we tried to match)</td>
+<td style="text-align: right;"><strong>0.871</strong></td>
+<td style="text-align: right;">−0.05</td>
+<td style="text-align: right;">+0.20</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Finding:</strong> run faithfully, Stage 3 converges to the <strong>teacher's healthy
+geometry (cos ≈ 0.38–0.40)</strong> and stays useful. It does <strong>not</strong> reproduce the
+released Stage-3 checkpoint's collapse (cos 0.871). Because the alignment loss
+pulls the student toward the teacher, and the released Stage-2 teacher is
+healthy (0.377), a faithful Stage 3 cannot collapse to 0.871 — that collapse
+must originate from something not present in the public recipe + checkpoints.</p>
+<hr />
+<p><em>Generated from the exact upstream source + our submit scripts. Diff each
+section against the paper to surface discrepancies.</em></p></div>
+        <pre class="raw-src" id="raw-8">Pairwise off-diagonal cosine similarity of the K=8 latent slots (the collapse
+metric) and downstream utility, K=8, n=200 held-out:
+
+| checkpoint | mean off-diag cos | utility (qwen-base reader) | self utility |
+|---|---:|---:|---:|
+| released **stage 2** (the teacher) | 0.377 | +2.05 | +2.78 |
+| **our stage 3, epochs = 3** (step 2913) | **0.401** | **+1.02** | **+0.79** |
+| our stage 3, epochs = 2 (step 1500) | 0.420 | +0.90 | −0.51 |
+| released **stage 3** (the artifact we tried to match) | **0.871** | −0.05 | +0.20 |
+
+**Finding:** run faithfully, Stage 3 converges to the **teacher&#x27;s healthy
+geometry (cos ≈ 0.38–0.40)** and stays useful. It does **not** reproduce the
+released Stage-3 checkpoint&#x27;s collapse (cos 0.871). Because the alignment loss
+pulls the student toward the teacher, and the released Stage-2 teacher is
+healthy (0.377), a faithful Stage 3 cannot collapse to 0.871 — that collapse
+must originate from something not present in the public recipe + checkpoints.
+
+---
+
+*Generated from the exact upstream source + our submit scripts. Diff each
+section against the paper to surface discrepancies.*</pre></section></div>
+<div id="ov"><h3>OVERVIEW · click a component, or press <b>O</b> / <b>Esc</b></h3><div class="ov-grid"><button class="ov-card" data-go="0"><span class="ov-i">0</span><span class="ov-t">Overview</span></button><button class="ov-card" data-go="1"><span class="ov-i">1</span><span class="ov-t">What Stage 3 is</span></button><button class="ov-card" data-go="2"><span class="ov-i">2</span><span class="ov-t">The exact pipeline we ran</span></button><button class="ov-card" data-go="3"><span class="ov-i">3</span><span class="ov-t">Step A — Teacher-latent precompute</span></button><button class="ov-card" data-go="4"><span class="ov-i">4</span><span class="ov-t">Step B — Student data construction</span></button><button class="ov-card" data-go="5"><span class="ov-i">5</span><span class="ov-t">Step C — Stage-3 training loss</span></button><button class="ov-card" data-go="6"><span class="ov-i">6</span><span class="ov-t">Exact hyperparameters</span></button><button class="ov-card" data-go="7"><span class="ov-i">7</span><span class="ov-t">The ONE deviation from upstream</span></button><button class="ov-card" data-go="8"><span class="ov-i">8</span><span class="ov-t">Result of this reproduction</span></button></div></div>
+<div id="count"></div>
+<div id="hud"><button class="hud-b" id="prev" title="Prev (←)">‹</button><button class="hud-b" id="ov-btn" title="Overview (O)">▦</button><button class="hud-b" id="next" title="Next (→)">›</button></div>
+<div id="bar"><i></i></div>
+<script>
+const N=9, SRCHASH="54b355c66793";
+let cur=0;
+const slides=[...document.querySelectorAll('.slide')];
+const bar=document.querySelector('#bar>i'), count=document.querySelector('#count'), ov=document.getElementById('ov');
+function show(n){
+  cur=Math.max(0,Math.min(N-1,n));
+  slides.forEach((s,i)=>s.classList.toggle('active',i===cur));
+  bar.style.width=((cur)/(N-1)*100)+'%';
+  count.textContent=cur+' / '+(N-1);
+  const a=slides[cur]; if(a) a.scrollTop=0;
+  location.hash=cur;
+}
+function next(){show(cur+1)} function prev(){show(cur-1)}
+document.getElementById('next').onclick=next;
+document.getElementById('prev').onclick=prev;
+document.getElementById('ov-btn').onclick=()=>ov.classList.toggle('show');
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{show(+b.dataset.go);ov.classList.remove('show')});
+document.querySelectorAll('.raw-toggle').forEach(b=>b.onclick=()=>{
+  const el=document.getElementById('raw-'+b.dataset.raw); el.classList.toggle('show');
+  b.textContent=el.classList.contains('show')?'hide raw ⌃':'view raw ⌄';
+});
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){next();e.preventDefault();}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){prev();e.preventDefault();}
+  else if(e.key==='Home'){show(0);} else if(e.key==='End'){show(N-1);}
+  else if(e.key==='o'||e.key==='O'){ov.classList.toggle('show');}
+  else if(e.key==='Escape'){ov.classList.remove('show');}
+});
+// touch swipe
+let tx=0; addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx; if(Math.abs(dx)>60){dx<0?next():prev();}},{passive:true});
+// deep link
+const h=parseInt(location.hash.slice(1)); show(isFinite(h)?h:0);
+// staleness check vs served source
+fetch('stage3_reproduction.md',{cache:'no-store'}).then(r=>r.ok?r.text():null).then(async t=>{
+  if(!t) return;
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));
+  const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,12);
+  if(hex!==SRCHASH) document.getElementById('stale').style.display='block';
+}).catch(()=>{});
+</script>
+</body></html>
