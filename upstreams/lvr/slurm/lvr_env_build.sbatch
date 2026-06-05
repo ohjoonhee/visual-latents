@@ -1,8 +1,12 @@
 #!/bin/bash
-# LVR cluster TRAINING env build (cpu-short). Builds the vendored LVR .venv (run from upstreams/lvr) from
-# the vendored requirements.txt + flash-attn (from source, needs CUDA_HOME) + boto3
-# (so the upstream OCI import resolves with --online_checkpoint False).
-# Build off the login node per §3-D. Submit:  sb slurm/lvr_env_build.sbatch
+# LVR cluster TRAINING env build (cpu-short). Builds the vendored LVR .venv (run
+# from upstreams/lvr) from requirements.txt (+ uv_overrides) + a prebuilt flash-attn
+# wheel + boto3 (so the upstream OCI import resolves with --online_checkpoint False).
+# Build off the login node per §3-D.
+#   Submit (default, PyPI torch ABI-0; flash-attn won't load -> train sdpa):
+#       sb slurm/lvr_env_build.sbatch
+#   Submit (option B, pytorch.org torch ABI-1 so flash-attn LOADS; fresh rebuild):
+#       TORCH_INDEX=pytorch sb slurm/lvr_env_build.sbatch
 #SBATCH -J launch
 #SBATCH -p cpu-short
 #SBATCH --nodes=1
@@ -25,18 +29,33 @@ export TORCH_EXTENSIONS_DIR=/data/joonhee/lvr/.cache/torch-extensions; mkdir -p 
 slack_notify ":rocket: START lvr-env-build | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME}"
 
 UV=$HOME/.local/bin/uv
-# Idempotent: reuse an existing venv so re-running only reconciles deps (e.g. to
-# swap flash-attn) instead of rebuilding from scratch.
+# TORCH_INDEX: where torch comes from.
+#   pypi    (default) — PyPI manylinux1 wheel = C++ ABI 0 (cxx11_abi=False). Core
+#             stack works, but the Dao-AILab flash-attn wheels need ABI 1 -> import
+#             fails (undefined symbol c10::Error … __cxx11::string).
+#   pytorch (option B) — download.pytorch.org/whl/cu124 wheel = ABI 1, matching the
+#             flash-attn wheels. Forces a FRESH venv so the whole tree is ABI-1
+#             consistent (no half-ABI-0 remnants). Same "2.6.0+cu124" version, so a
+#             clean rebuild is the reliable way to actually switch the binary.
+TORCH_INDEX="${TORCH_INDEX:-pypi}"
+[ "$TORCH_INDEX" = "pytorch" ] && rm -rf .venv
+# Idempotent (pypi mode): reuse an existing venv so a re-run only reconciles deps.
 [ -x .venv/bin/python ] || $UV venv --python 3.11 .venv 2>&1 || { slack_notify ":x: uv venv failed"; exit 12; }
-# Core deps (torch 2.6.0 PyPI linux wheel = CUDA 12.4 build) + boto3 for the OCI
-# import. --override slurm/uv_overrides.txt fixes 2 broken pins in the upstream
-# freeze (av yanked, hub stale vs transformers) without editing requirements.txt.
+if [ "$TORCH_INDEX" = "pytorch" ]; then
+  # ABI-1 torch FIRST so the requirements install below sees torch==2.6.0 satisfied.
+  $UV pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cu124 \
+    torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 2>&1 | tail -6
+  rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pytorch.org torch install failed rc=$rc"; exit 18; }
+fi
+# Core deps (torch already satisfied in pytorch mode; PyPI ABI-0 wheel in pypi mode)
+# + boto3 for the OCI import. --override slurm/uv_overrides.txt fixes 2 broken pins
+# in the upstream freeze (av yanked, hub stale vs transformers) — requirements.txt untouched.
 $UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 2>&1 | tail -15
 rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pip install -r requirements failed rc=$rc"; exit 13; }
-# flash-attn: install the Dao-AILab PREBUILT wheel matching this torch
-# (2.6 / cu12 / cxx11abiFALSE / cp311). Building from source produced a .so with
-# the wrong C++ ABI (cxx11abiTRUE) -> torch undefined-symbol at import; torch
-# 2.6.0 PyPI is cxx11_abi=False. Prebuilt wheel is ABI-correct AND skips the compile.
+# flash-attn: install the Dao-AILab PREBUILT wheel (2.6 / cu12 / cxx11abiFALSE /
+# cp311). Its .so requires torch's ABI-1 (__cxx11) c10 symbols, so it only LINKS
+# against TORCH_INDEX=pytorch (ABI-1); with PyPI torch (ABI-0) the import fails with
+# an undefined symbol (expected — use sdpa, or TORCH_INDEX=pytorch for flash-attn).
 FA_WHL="https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.6cxx11abiFALSE-cp311-cp311-linux_x86_64.whl"
 $UV pip install --python .venv/bin/python "$FA_WHL" 2>&1 | tail -6
 rc=${PIPESTATUS[0]}
