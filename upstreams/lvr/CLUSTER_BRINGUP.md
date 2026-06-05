@@ -17,6 +17,10 @@ eval scaffolding only.
   `scripts/finetune_lvr_stage{1,2}_3b.sh` args **verbatim** + cluster adaptations.
   `REPO` is derived from `$SLURM_SUBMIT_DIR`, so they run from wherever
   `visual-latents` is checked out — **submit from this directory**.
+- `slurm/uv_overrides.txt` — **new**. The env build applies it via
+  `uv pip install --override` to fix two broken pins in the upstream freeze
+  (`av==14.3.0` yanked from PyPI; `huggingface-hub==0.30.2` contradicts
+  `transformers==4.54.0`). `requirements.txt` is left byte-identical to upstream.
 - `.gitignore`, `logs/.gitkeep` — housekeeping.
 
 Documented deviations vs the released scripts: (1) Stage-1 `grad_accum 8→16`

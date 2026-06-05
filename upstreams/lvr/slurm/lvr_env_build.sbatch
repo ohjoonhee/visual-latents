@@ -26,8 +26,10 @@ slack_notify ":rocket: START lvr-env-build | id=${SLURM_JOB_ID} | node=${SLURMD_
 
 UV=$HOME/.local/bin/uv
 $UV venv --python 3.11 .venv 2>&1 || { slack_notify ":x: uv venv failed"; exit 12; }
-# Core deps (torch 2.6 cu124 from PyPI default) + boto3 for the OCI import.
-$UV pip install --python .venv/bin/python -r requirements.txt boto3 2>&1 | tail -15
+# Core deps (torch 2.6.0 PyPI linux wheel = CUDA 12.4 build) + boto3 for the OCI
+# import. --override slurm/uv_overrides.txt fixes 2 broken pins in the upstream
+# freeze (av yanked, hub stale vs transformers) without editing requirements.txt.
+$UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 2>&1 | tail -15
 rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pip install -r requirements failed rc=$rc"; exit 13; }
 # flash-attn from source (needs CUDA_HOME). Slow (single .so compile); cached in TORCH_EXTENSIONS_DIR.
 $UV pip install --python .venv/bin/python flash-attn --no-build-isolation 2>&1 | tail -8
