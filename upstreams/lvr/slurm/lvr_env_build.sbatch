@@ -25,15 +25,25 @@ export TORCH_EXTENSIONS_DIR=/data/joonhee/lvr/.cache/torch-extensions; mkdir -p 
 slack_notify ":rocket: START lvr-env-build | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME}"
 
 UV=$HOME/.local/bin/uv
-$UV venv --python 3.11 .venv 2>&1 || { slack_notify ":x: uv venv failed"; exit 12; }
+# Idempotent: reuse an existing venv so re-running only reconciles deps (e.g. to
+# swap flash-attn) instead of rebuilding from scratch.
+[ -x .venv/bin/python ] || $UV venv --python 3.11 .venv 2>&1 || { slack_notify ":x: uv venv failed"; exit 12; }
 # Core deps (torch 2.6.0 PyPI linux wheel = CUDA 12.4 build) + boto3 for the OCI
 # import. --override slurm/uv_overrides.txt fixes 2 broken pins in the upstream
 # freeze (av yanked, hub stale vs transformers) without editing requirements.txt.
 $UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 2>&1 | tail -15
 rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pip install -r requirements failed rc=$rc"; exit 13; }
-# flash-attn from source (needs CUDA_HOME). Slow (single .so compile); cached in TORCH_EXTENSIONS_DIR.
-$UV pip install --python .venv/bin/python flash-attn --no-build-isolation 2>&1 | tail -8
-rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":warning: flash-attn build failed rc=$rc — train with --disable_flash_attn2 True (sdpa) fallback"; }
+# flash-attn: install the Dao-AILab PREBUILT wheel matching this torch
+# (2.6 / cu12 / cxx11abiFALSE / cp311). Building from source produced a .so with
+# the wrong C++ ABI (cxx11abiTRUE) -> torch undefined-symbol at import; torch
+# 2.6.0 PyPI is cxx11_abi=False. Prebuilt wheel is ABI-correct AND skips the compile.
+FA_WHL="https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.6cxx11abiFALSE-cp311-cp311-linux_x86_64.whl"
+$UV pip install --python .venv/bin/python "$FA_WHL" 2>&1 | tail -6
+rc=${PIPESTATUS[0]}
+if [ $rc -ne 0 ]; then
+  slack_notify ":warning: flash-attn prebuilt wheel install failed rc=$rc — trying source build (may ABI-mismatch)"
+  $UV pip install --python .venv/bin/python flash-attn==2.8.3 --no-build-isolation 2>&1 | tail -8
+fi
 
 .venv/bin/python - <<'PY' 2>&1 | tail -8
 import torch, transformers, deepspeed, trl, datasets
