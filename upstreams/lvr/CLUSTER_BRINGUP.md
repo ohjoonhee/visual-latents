@@ -54,8 +54,10 @@ sb slurm/lvr_env_build.sbatch
 sb slurm/lvr_data_stage.sbatch      # JSONs + Visual-CoT 142GB + ViRL39K 1.8GB
 
 # 3. Stage-1 SFT  (gpu-4farm 4xH100)
-#    SMOKE FIRST: copy the sbatch, set --max_steps 20, confirm loss + loss_lvr
-#    finite & decreasing, no OOM-loop. Then the full run:
+#    SMOKE FIRST (20 steps, isolated _SMOKE run dir): loss + loss_lvr finite &
+#    decreasing, a checkpoint writes, no OOM-loop.
+SMOKE=1 sb slurm/lvr_stage1_3b.sbatch
+#    then the full run:
 sb slurm/lvr_stage1_3b.sbatch       # full 2500;  RESUME=1 sb ...  to continue
 
 # 4. upload SFT ckpt -> eval (this is the RL baseline)
@@ -63,9 +65,11 @@ sb slurm/lvr_stage1_3b.sbatch       # full 2500;  RESUME=1 sb ...  to continue
 #    (V*/MMVP, steps {4,8,16})
 
 # 5. Stage-2 GRPO_latent RL  (gpu-4farm 4xH100)
-#    SMOKE FIRST (cap steps): rollouts emit <answer>, rewards > 0, GRPO loss
-#    finite. Then full 2 epochs — heavy (8 gens x teacher-force replay/prompt),
-#    budget 2-3 resume jobs under the 24h cap.
+#    SMOKE FIRST (8 steps; inits from the latest stage-1 ckpt — a stage-1 SMOKE
+#    ckpt is fine): rollouts emit <answer>, rewards > 0, GRPO loss finite.
+SMOKE=1 sb slurm/lvr_stage2_3b.sbatch
+#    then the full run — 2 epochs, heavy (8 gens x teacher-force replay/prompt),
+#    budget 2-3 resume jobs under the 24h cap:
 sb slurm/lvr_stage2_3b.sbatch
 
 # 6. upload RL ckpt -> eval ; report the SFT->RL gain vs paper 3B

@@ -4,6 +4,7 @@
 # --online_checkpoint False, and grad_accum 8->16 (4-GPU eff batch = 1x4x16 = 64,
 # matching the script's 8-GPU 1x8x8=64). DeepSpeed ZeRO-3-offload.
 # Submit fresh:   sb slurm/lvr_stage1_3b.sbatch
+# Smoke (gate):   SMOKE=1 sb slurm/lvr_stage1_3b.sbatch     # 20 steps, isolated _SMOKE dir
 # Submit resume:  RESUME=1 sb slurm/lvr_stage1_3b.sbatch     # DO NOT agent-submit (§3-A)
 #SBATCH -J launch
 #SBATCH -p gpu-4farm
@@ -29,7 +30,12 @@ export TMPDIR=$ROOT/.cache/tmp TRITON_CACHE_DIR=$ROOT/.cache/triton TORCH_HOME=$
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export WANDB_PROJECT="LVR-Qwen25-VL-3B-SFT-STAGE-1-450k"
 
-RUN_NAME="Stage1_mseLVRLossLambda0.1-MaxVisToken5120-MinVisToken128"
+SMOKE="${SMOKE:-0}"
+# SMOKE=1 → fast gate: 20 steps, frequent saves (exercise the ckpt-write path),
+# isolated _SMOKE run dir so it can't collide with the real run or trip its gate.
+MAX_STEPS=2500; SAVE_STEPS=500; SAVE_LIMIT=10; SMOKE_TAG=""
+if [ "$SMOKE" = "1" ]; then MAX_STEPS=20; SAVE_STEPS=10; SAVE_LIMIT=3; SMOKE_TAG="_SMOKE"; fi
+RUN_NAME="Stage1_mseLVRLossLambda0.1-MaxVisToken5120-MinVisToken128${SMOKE_TAG}"
 OUTPUT_DIR=$ROOT/ckpts/stage1
 SAVE_DIR="$OUTPUT_DIR/Qwen2.5-VL-3B-Instruct/$RUN_NAME"   # train_lvr nests by model/run
 RESUME="${RESUME:-0}"
@@ -43,7 +49,7 @@ if [ "$RESUME" = "1" ]; then
 elif [ "$NCK" -ge 1 ]; then
   slack_notify ":x: stage1 fresh but $SAVE_DIR has $NCK ckpts — set RESUME=1 or clear dir"; exit 17
 fi
-slack_notify ":rocket: START lvr-stage1-sft 3B | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME} | RESUME=$RESUME"
+slack_notify ":rocket: START lvr-stage1-sft 3B | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME} | RESUME=$RESUME SMOKE=$SMOKE | steps=$MAX_STEPS"
 
 deepspeed --num_gpus=4 src/train/train_lvr.py \
   --run_name "$RUN_NAME" --coconut True --loss_lvr_fct mse \
@@ -52,14 +58,14 @@ deepspeed --num_gpus=4 src/train/train_lvr.py \
   --data_path "$ROOT/data/meta_data_lvr_sft_stage1.json" \
   --remove_unused_columns False --lvr_head False \
   --freeze_vision_tower True --freeze_merger True --freeze_llm False \
-  --max_steps 2500 --learning_rate 1e-5 --loss_lvr_lambda 0.1 \
+  --max_steps $MAX_STEPS --learning_rate 1e-5 --loss_lvr_lambda 0.1 \
   --bf16 True --fp16 False --disable_flash_attn2 False \
   --online_checkpoint False --output_dir "$OUTPUT_DIR" \
   --num_train_epochs 1 --per_device_train_batch_size 1 --gradient_accumulation_steps 16 \
   --image_min_pixels $((128*28*28)) --image_max_pixels $((5120*28*28)) \
   --weight_decay 0.1 --warmup_ratio 0.03 --lr_scheduler_type cosine \
   --logging_steps 1 --tf32 False --gradient_checkpointing True --report_to wandb \
-  --lazy_preprocess True --save_strategy steps --save_steps 500 --save_total_limit 10 \
+  --lazy_preprocess True --save_strategy steps --save_steps $SAVE_STEPS --save_total_limit $SAVE_LIMIT \
   --dataloader_num_workers 8 --enable_data_packing True --max_packed_tokens 16384 \
   --random_seed 42 --long_seq_threshold 4096 --max_instance_per_batch 4 $RESUME_ARG
 rc=$?
