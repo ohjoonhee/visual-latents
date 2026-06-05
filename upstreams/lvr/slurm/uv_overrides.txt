@@ -1,17 +1,21 @@
-# uv override for two unresolvable pins in the (otherwise pristine) upstream
-# requirements.txt — applied via `uv pip install --override` so requirements.txt
-# stays byte-identical to upstream (faithfulness).
+# uv override for two unresolvable/unbuildable pins in the (otherwise pristine)
+# upstream requirements.txt — applied via `uv pip install --override` so
+# requirements.txt stays byte-identical to upstream (faithfulness).
 #
-#  - av==14.3.0 was YANKED from PyPI (zero files for that exact version under any
-#    Python); nearest available patch is 14.4.0. (av is PyAV, video-decode — not on
-#    the LVR image path, but it's a frozen transitive dep so it must resolve.)
-#  - huggingface-hub==0.30.2 contradicts transformers==4.54.0, which requires
-#    hub>=0.34.0,<1.0. The 0.30.2 line is stale in the upstream freeze; bumping lets
-#    the set resolve (transformers pulls hub 0.36.x). The authors' real working env
-#    could not have had both, so this restores consistency rather than diverging.
+#  - av (PyAV): the frozen av==14.3.0 was YANKED from PyPI, and the whole av 14.x
+#    line ships NO binary wheels (sdist only) — uv would compile it from source,
+#    which needs system FFmpeg dev libs (libavformat/codec/...) absent on the
+#    compute node, so the build fails. av 17.0.1 ships cp311 manylinux wheels and
+#    is exactly what the proven local eval venv runs. av is video-decode (PyAV),
+#    off the LVR image path, so the version is functionally irrelevant — we only
+#    need it to install from a wheel.
+#  - huggingface-hub==0.30.2 contradicts transformers==4.54.0 (needs hub>=0.34);
+#    a stale line in the upstream freeze. Bumping restores consistency
+#    (transformers pulls hub 0.36.x).
 #
-# Validated by `uv pip install --dry-run -r requirements.txt --override <this> boto3`
-# under both py3.11 and py3.12: full set resolves with torch 2.6.0 / transformers
-# 4.54.0 / deepspeed 0.16.7 / trl 0.17.0 all intact.
-av==14.4.0
+# Validated: `uv pip install av==17.0.1` installs from a wheel (no FFmpeg), and
+# `uv pip install --dry-run -r requirements.txt --override <this> boto3` resolves
+# the full set with torch 2.6.0 / transformers 4.54.0 / deepspeed 0.16.7 / trl
+# 0.17.0 intact.
+av==17.0.1
 huggingface-hub>=0.34.0,<1.0
