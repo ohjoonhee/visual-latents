@@ -61,3 +61,9 @@ phase*/checkpoints/
 phase*/latents_student/
 phase*/results/*/latents/
 phase*/results/run_*/latents/
+
+# Vendored LVR upstream: keep its in-repo manifest + logs/.gitkeep despite the
+# global data/ and logs/ rules above (nested upstreams/lvr/.gitignore still
+# ignores *.log inside it).
+!upstreams/lvr/data/
+!upstreams/lvr/logs/

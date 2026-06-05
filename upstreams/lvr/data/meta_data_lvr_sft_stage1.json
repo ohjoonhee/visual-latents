@@ -1,0 +1,14 @@
+[
+ {
+  "ds_name": "viscot",
+  "data_path": "/data/joonhee/lvr/data/viscot_363k_lvr_formatted.json",
+  "image_folder": "/data/joonhee/lvr/images/",
+  "ds_type": "Q_A"
+ },
+ {
+  "ds_name": "viscot_dlc",
+  "data_path": "/data/joonhee/lvr/data/viscot_sroie_dude_lvr_formatted.json",
+  "image_folder": "/data/joonhee/lvr/images/",
+  "ds_type": "Q_A"
+ }
+]
