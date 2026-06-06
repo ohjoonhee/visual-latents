@@ -59,7 +59,7 @@ deepspeed --num_gpus=4 src/train/train_lvr.py \
   --remove_unused_columns False --lvr_head False \
   --freeze_vision_tower True --freeze_merger True --freeze_llm False \
   --max_steps $MAX_STEPS --learning_rate 1e-5 --loss_lvr_lambda 0.1 \
-  --bf16 True --fp16 False --disable_flash_attn2 False \
+  --bf16 True --fp16 False --disable_flash_attn2 True \
   --online_checkpoint False --output_dir "$OUTPUT_DIR" \
   --num_train_epochs 1 --per_device_train_batch_size 1 --gradient_accumulation_steps 16 \
   --image_min_pixels $((128*28*28)) --image_max_pixels $((5120*28*28)) \

@@ -27,9 +27,14 @@ Documented deviations vs the released scripts: (1) Stage-1 `grad_accum 8→16`
 (4 GPUs vs the script's 8 → eff. batch `1×4×16 = 64`, matching `1×8×8`);
 (2) cluster paths; (3) `--online_checkpoint False` (local save, no OCI — `boto3`
 is installed so the top-level import resolves, `oci_handler` is never
-instantiated, **no code edit**); (4) training keeps `flash_attention_2`
-(`--disable_flash_attn2 False`; flash-attn is compiled in the env build) — only
-*eval* fell back to sdpa.
+instantiated, **no code edit**); (4) **attention = sdpa** (`--disable_flash_attn2
+True`, both stages). flash-attn 2.8.3's prebuilt wheels for torch 2.6 (both
+`abiTRUE`/`abiFALSE`) demand the ABI-1 `__cxx11` c10 symbol, but torch 2.6.0+cu124
+is ABI-0 (`cxx11_abi=False`) from PyPI **and** download.pytorch.org, and a source
+build also came out ABI-1 — no compatible flash-attn exists for this torch. sdpa
+is exact attention (numerically equivalent) and is the impl the eval anchor used to
+reproduce the paper, so this is faithful. (env_build still installs a flash-attn
+wheel + has `FA_ABI`/`TORCH_INDEX` knobs if a future torch makes it loadable.)
 
 ## Faithful hyperparameters (verbatim from the released scripts)
 - **Stage-1 SFT**: `Qwen2.5-VL-3B-Instruct`, `max_steps 2500`, `lr 1e-5` cosine,

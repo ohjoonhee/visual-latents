@@ -57,7 +57,7 @@ deepspeed --num_gpus=4 src/train/train_grpo.py \
   --data_path "$ROOT/data/virl39k.json" \
   --image_folder "$ROOT/images/" \
   --freeze_vision_tower True --freeze_merger True --freeze_llm False \
-  --bf16 True --fp16 False --disable_flash_attn2 False \
+  --bf16 True --fp16 False --disable_flash_attn2 True \
   --output_dir "$OUTPUT_DIR" \
   --temperature 0.9 --num_train_epochs 2 $MAXSTEPS_ARG --num_generations 8 \
   --per_device_train_batch_size 4 --gradient_accumulation_steps 2 \
