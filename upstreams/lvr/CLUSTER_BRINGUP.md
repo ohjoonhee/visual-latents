@@ -27,14 +27,13 @@ Documented deviations vs the released scripts: (1) Stage-1 `grad_accum 8→16`
 (4 GPUs vs the script's 8 → eff. batch `1×4×16 = 64`, matching `1×8×8`);
 (2) cluster paths; (3) `--online_checkpoint False` (local save, no OCI — `boto3`
 is installed so the top-level import resolves, `oci_handler` is never
-instantiated, **no code edit**); (4) **attention = sdpa** (`--disable_flash_attn2
-True`, both stages). flash-attn 2.8.3's prebuilt wheels for torch 2.6 (both
-`abiTRUE`/`abiFALSE`) demand the ABI-1 `__cxx11` c10 symbol, but torch 2.6.0+cu124
-is ABI-0 (`cxx11_abi=False`) from PyPI **and** download.pytorch.org, and a source
-build also came out ABI-1 — no compatible flash-attn exists for this torch. sdpa
-is exact attention (numerically equivalent) and is the impl the eval anchor used to
-reproduce the paper, so this is faithful. (env_build still installs a flash-attn
-wheel + has `FA_ABI`/`TORCH_INDEX` knobs if a future torch makes it loadable.)
+instantiated, **no code edit**). **flash-attn IS used** (`--disable_flash_attn2
+False`, both stages) — pinned to **2.7.4.post1**, the authors' version. The README's
+unversioned `pip install flash-attn` resolved to 2.7.4.post1 in their era (it shipped
+the SAME day as torch 2.6.0, 2025-01-29); its `abiFALSE` wheel is old-ABI and links
+our old-ABI PyPI torch 2.6.0 (`cxx11_abi=False`). flash-attn 2.8.x (newer) ships
+ABI-1 wheels that don't link → `undefined symbol __cxx11`. env_build pins
+`FA_VER=2.7.4.post1` / `FA_ABI=FALSE` (verified: `flash_attn 2.7.4.post1` imports).
 
 ## Faithful hyperparameters (verbatim from the released scripts)
 - **Stage-1 SFT**: `Qwen2.5-VL-3B-Instruct`, `max_steps 2500`, `lr 1e-5` cosine,
