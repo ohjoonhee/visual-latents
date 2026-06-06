@@ -28,6 +28,9 @@ ROOT=/data/joonhee/lvr
 mkdir -p $ROOT/.cache/{tmp,triton,torch,torch-extensions} $ROOT/wandb
 export TMPDIR=$ROOT/.cache/tmp TRITON_CACHE_DIR=$ROOT/.cache/triton TORCH_HOME=$ROOT/.cache/torch TORCH_EXTENSIONS_DIR=$ROOT/.cache/torch-extensions WANDB_DIR=$ROOT/wandb
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+# train_lvr.py does `from src.model...` -> the repo ROOT must be importable.
+# `deepspeed src/train/train_lvr.py` only puts src/train/ on sys.path, so add $REPO.
+export PYTHONPATH=$REPO:${PYTHONPATH:-}
 export WANDB_PROJECT="LVR-Qwen25-VL-3B-SFT-STAGE-1-450k"
 
 SMOKE="${SMOKE:-0}"
