@@ -38,8 +38,13 @@ UV=$HOME/.local/bin/uv
 #             pytorch.org binaries specifically.
 TORCH_INDEX="${TORCH_INDEX:-pypi}"
 [ "$TORCH_INDEX" = "pytorch" ] && rm -rf .venv
-# Idempotent (pypi mode): reuse an existing venv so a re-run only reconciles deps.
-[ -x .venv/bin/python ] || $UV venv --python 3.11 .venv 2>&1 || { slack_notify ":x: uv venv failed"; exit 12; }
+# Build the venv on a uv-MANAGED standalone CPython (bundles dev headers incl.
+# Python.h). The system /usr/bin/python3.11 has no python3.11-devel, so at TRAIN
+# time triton's runtime JIT (cuda_utils) fails: "fatal error: Python.h: No such
+# file or directory". --python-preference only-managed forces the standalone interp.
+$UV python install 3.11 2>&1 | tail -1
+# Idempotent: reuse an existing venv so a re-run only reconciles deps.
+[ -x .venv/bin/python ] || $UV venv --python 3.11 --python-preference only-managed .venv 2>&1 || { slack_notify ":x: uv venv failed"; exit 12; }
 if [ "$TORCH_INDEX" = "pytorch" ]; then
   # ABI-1 torch FIRST so the requirements install below sees torch==2.6.0 satisfied.
   $UV pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cu124 \
