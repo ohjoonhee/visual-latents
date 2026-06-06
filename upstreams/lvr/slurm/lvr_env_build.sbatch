@@ -29,14 +29,13 @@ export TORCH_EXTENSIONS_DIR=/data/joonhee/lvr/.cache/torch-extensions; mkdir -p 
 slack_notify ":rocket: START lvr-env-build | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME}"
 
 UV=$HOME/.local/bin/uv
-# TORCH_INDEX: where torch comes from.
-#   pypi    (default) — PyPI manylinux1 wheel = C++ ABI 0 (cxx11_abi=False). Core
-#             stack works, but the Dao-AILab flash-attn wheels need ABI 1 -> import
-#             fails (undefined symbol c10::Error … __cxx11::string).
-#   pytorch (option B) — download.pytorch.org/whl/cu124 wheel = ABI 1, matching the
-#             flash-attn wheels. Forces a FRESH venv so the whole tree is ABI-1
-#             consistent (no half-ABI-0 remnants). Same "2.6.0+cu124" version, so a
-#             clean rebuild is the reliable way to actually switch the binary.
+# TORCH_INDEX: where torch comes from. NB (verified job 219384): torch 2.6.0+cu124
+# is cxx11_abi=False (ABI 0) from BOTH PyPI and download.pytorch.org/whl/cu124 — so
+# this knob does NOT change the ABI. The flash-attn ABI is selected by FA_ABI below
+# instead. Kept for completeness; default pypi is fine.
+#   pypi    (default) — PyPI manylinux1 wheel.
+#   pytorch — cu124 index wheel (fresh venv). Same ABI 0; use only if you want the
+#             pytorch.org binaries specifically.
 TORCH_INDEX="${TORCH_INDEX:-pypi}"
 [ "$TORCH_INDEX" = "pytorch" ] && rm -rf .venv
 # Idempotent (pypi mode): reuse an existing venv so a re-run only reconciles deps.
@@ -52,11 +51,13 @@ fi
 # in the upstream freeze (av yanked, hub stale vs transformers) — requirements.txt untouched.
 $UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 2>&1 | tail -15
 rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pip install -r requirements failed rc=$rc"; exit 13; }
-# flash-attn: install the Dao-AILab PREBUILT wheel (2.6 / cu12 / cxx11abiFALSE /
-# cp311). Its .so requires torch's ABI-1 (__cxx11) c10 symbols, so it only LINKS
-# against TORCH_INDEX=pytorch (ABI-1); with PyPI torch (ABI-0) the import fails with
-# an undefined symbol (expected — use sdpa, or TORCH_INDEX=pytorch for flash-attn).
-FA_WHL="https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.6cxx11abiFALSE-cp311-cp311-linux_x86_64.whl"
+# flash-attn: install a Dao-AILab PREBUILT wheel (2.6 / cu12 / cp311). FA_ABI picks
+# the variant. torch 2.6.0+cu124 is cxx11_abi=False (ABI-0; same from PyPI and the
+# pytorch.org cu124 index) -> it exports the `Ss` (non-__cxx11) c10 symbols. Their
+# "abiFALSE" wheel demands the __cxx11 (ABI-1) symbol -> mismatch; so the matching
+# wheel is empirically FA_ABI=TRUE. Default TRUE; FA_ABI=FALSE for the other variant.
+FA_ABI="${FA_ABI:-TRUE}"
+FA_WHL="https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.6cxx11abi${FA_ABI}-cp311-cp311-linux_x86_64.whl"
 $UV pip install --python .venv/bin/python "$FA_WHL" 2>&1 | tail -6
 rc=${PIPESTATUS[0]}
 if [ $rc -ne 0 ]; then
