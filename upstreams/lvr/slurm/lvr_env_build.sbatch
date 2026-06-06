@@ -51,18 +51,20 @@ fi
 # in the upstream freeze (av yanked, hub stale vs transformers) — requirements.txt untouched.
 $UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 2>&1 | tail -15
 rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pip install -r requirements failed rc=$rc"; exit 13; }
-# flash-attn: install a Dao-AILab PREBUILT wheel (2.6 / cu12 / cp311). FA_ABI picks
-# the variant. torch 2.6.0+cu124 is cxx11_abi=False (ABI-0; same from PyPI and the
-# pytorch.org cu124 index) -> it exports the `Ss` (non-__cxx11) c10 symbols. Their
-# "abiFALSE" wheel demands the __cxx11 (ABI-1) symbol -> mismatch; so the matching
-# wheel is empirically FA_ABI=TRUE. Default TRUE; FA_ABI=FALSE for the other variant.
-FA_ABI="${FA_ABI:-TRUE}"
-FA_WHL="https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.6cxx11abi${FA_ABI}-cp311-cp311-linux_x86_64.whl"
+# flash-attn: pin the version the AUTHORS used. torch 2.6.0 and flash-attn
+# 2.7.4.post1 were released the SAME day (2025-01-29); the LVR repo's unversioned
+# `pip install flash-attn` (README) resolved to 2.7.4.post1 in that era. flash-attn
+# 2.8.x (our earlier default) ships ABI-1 wheels that don't link our ABI-0 torch
+# (cxx11_abi=False, exports `Ss`); the 2.7.x abiFALSE wheel is ABI-0 and matches.
+# Knobs: FA_VER (version), FA_ABI (FALSE=ABI-0, matches our torch).
+FA_VER="${FA_VER:-2.7.4.post1}"
+FA_ABI="${FA_ABI:-FALSE}"
+FA_WHL="https://github.com/Dao-AILab/flash-attention/releases/download/v${FA_VER}/flash_attn-${FA_VER}+cu12torch2.6cxx11abi${FA_ABI}-cp311-cp311-linux_x86_64.whl"
 $UV pip install --python .venv/bin/python "$FA_WHL" 2>&1 | tail -6
 rc=${PIPESTATUS[0]}
 if [ $rc -ne 0 ]; then
-  slack_notify ":warning: flash-attn prebuilt wheel install failed rc=$rc — trying source build (may ABI-mismatch)"
-  $UV pip install --python .venv/bin/python flash-attn==2.8.3 --no-build-isolation 2>&1 | tail -8
+  slack_notify ":warning: flash-attn wheel install failed rc=$rc — trying source build of $FA_VER"
+  $UV pip install --python .venv/bin/python "flash-attn==$FA_VER" --no-build-isolation 2>&1 | tail -8
 fi
 
 .venv/bin/python - <<'PY' 2>&1 | tail -8
