@@ -27,9 +27,9 @@ module purge; module load cuda/12.6; export CUDA_HOME=/opt/ohpc/pub/apps/cuda/12
 ROOT=/data/joonhee/lvr
 mkdir -p $ROOT/.cache/{tmp,triton,torch,torch-extensions} $ROOT/wandb
 export TMPDIR=$ROOT/.cache/tmp TRITON_CACHE_DIR=$ROOT/.cache/triton TORCH_HOME=$ROOT/.cache/torch TORCH_EXTENSIONS_DIR=$ROOT/.cache/torch-extensions WANDB_DIR=$ROOT/wandb
-# $REPO (repo root) on PYTHONPATH so `from src...` resolves (script-path launch puts
-# only src/train/ on sys.path); keep src too, matching the authors' stage2 script.
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONPATH=$REPO:src:${PYTHONPATH:-}
+# Both repo ROOT (for `from src...`) and src/ (for `from train...`) on PYTHONPATH —
+# the code mixes the two styles; script-path launch puts only src/train/ on sys.path.
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONPATH=$REPO:$REPO/src:${PYTHONPATH:-}
 export WANDB_PROJECT="LVR-Qwen25-VL-3B-SFT-STAGE-2-39k"
 
 SMOKE="${SMOKE:-0}"
