@@ -54,7 +54,10 @@ fi
 # Core deps (torch already satisfied in pytorch mode; PyPI ABI-0 wheel in pypi mode)
 # + boto3 for the OCI import. --override slurm/uv_overrides.txt fixes 2 broken pins
 # in the upstream freeze (av yanked, hub stale vs transformers) — requirements.txt untouched.
-$UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 2>&1 | tail -15
+# qwen-vl-utils: NOT in requirements.txt — the README installs it separately
+# (`pip install qwen-vl-utils`); src/trainer imports `from qwen_vl_utils import
+# process_vision_info`. boto3: OCI import. Both folded into the resolved install.
+$UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 qwen-vl-utils 2>&1 | tail -15
 rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pip install -r requirements failed rc=$rc"; exit 13; }
 # flash-attn: pin the version the AUTHORS used. torch 2.6.0 and flash-attn
 # 2.7.4.post1 were released the SAME day (2025-01-29); the LVR repo's unversioned
