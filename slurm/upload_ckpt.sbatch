@@ -108,11 +108,16 @@ echo "[$(date)] hf_user=$HF_USER"
 # --- Upload ---
 NOTES_ARG=()
 [ -n "$NOTES" ] && NOTES_ARG=(--notes "$NOTES")
+# PRIVATE=1 → push as a private repo (default public, per the script). Use for
+# in-progress reproductions not yet meant to be public.
+PRIV_ARG=()
+[ "${PRIVATE:-0}" = "1" ] && PRIV_ARG=(--private)
 
 python scripts/cluster/upload_ckpt_to_hf.py \
   --ckpt-dir "$CKPT_DIR" \
   --step "$STEP" \
   --repo "$REPO" \
+  "${PRIV_ARG[@]}" \
   "${NOTES_ARG[@]}"
 rc=$?
 
