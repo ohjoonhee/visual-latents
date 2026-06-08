@@ -41,7 +41,10 @@ MAX_STEPS=2500; SAVE_STEPS=500; SAVE_LIMIT=10; SMOKE_TAG=""
 if [ "$SMOKE" = "1" ]; then MAX_STEPS=20; SAVE_STEPS=10; SAVE_LIMIT=3; SMOKE_TAG="_SMOKE"; fi
 RUN_NAME="Stage1_mseLVRLossLambda0.1-MaxVisToken5120-MinVisToken128${SMOKE_TAG}"
 OUTPUT_DIR=$ROOT/ckpts/stage1
-SAVE_DIR="$OUTPUT_DIR/Qwen2.5-VL-3B-Instruct/$RUN_NAME"   # train_lvr nests by model/run
+# HF Trainer saves checkpoints FLAT in --output_dir (verified: job 219591 wrote
+# $OUTPUT_DIR/checkpoint-500) — it does NOT nest by model/run. The resume gate +
+# --checkpoint_name therefore key off $OUTPUT_DIR directly.
+SAVE_DIR="$OUTPUT_DIR"
 RESUME="${RESUME:-0}"
 # resume gate (no-clobber on fresh; --checkpoint_name latest on resume, per script comment)
 RESUME_ARG=""
