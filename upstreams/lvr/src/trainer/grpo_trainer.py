@@ -284,9 +284,11 @@ class QwenGRPOTrainer(Trainer):
         temp_folder=None,
         oci_handler=None,
     ):
-        if oci_handler:
-            self.oci_handler = oci_handler
-            self.temp_folder = temp_folder     # temp_file class; "/dockerx/Local/users/bangzheng/model_name/run_name-[random]"
+        # Always set these (None when --online_checkpoint False); upstream only set
+        # them under `if oci_handler:`, which crashes _save_checkpoint's
+        # `if self.temp_folder:` when there is no OCI handler.
+        self.oci_handler = oci_handler
+        self.temp_folder = temp_folder     # temp_file class; "/dockerx/Local/users/bangzheng/model_name/run_name-[random]"
 
         
         if args is None:
