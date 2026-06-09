@@ -57,7 +57,10 @@ fi
 # qwen-vl-utils: NOT in requirements.txt — the README installs it separately
 # (`pip install qwen-vl-utils`); src/trainer imports `from qwen_vl_utils import
 # process_vision_info`. boto3: OCI import. Both folded into the resolved install.
-$UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 qwen-vl-utils 2>&1 | tail -15
+# math-verify: NOT in requirements.txt — Stage-2 GRPO reward_funcs.py does
+# `from math_verify import parse, verify` (ViRL39K answer verification). Pulls
+# latex2sympy2_extended. qwen-vl-utils: README separate install.
+$UV pip install --python .venv/bin/python -r requirements.txt --override slurm/uv_overrides.txt boto3 qwen-vl-utils math-verify 2>&1 | tail -15
 rc=${PIPESTATUS[0]}; [ $rc -ne 0 ] && { slack_notify ":x: pip install -r requirements failed rc=$rc"; exit 13; }
 # flash-attn: pin the version the AUTHORS used. torch 2.6.0 and flash-attn
 # 2.7.4.post1 were released the SAME day (2025-01-29); the LVR repo's unversioned
