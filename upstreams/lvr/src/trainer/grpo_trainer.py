@@ -17,6 +17,7 @@ from typing import Union
 from collections import defaultdict, deque
 from collections.abc import Sized
 from contextlib import nullcontext
+from functools import partial
 from typing import Any, Callable, Optional, Union
 from datasets import Dataset, IterableDataset
 from packaging import version
@@ -574,7 +575,14 @@ class QwenGRPOTrainer(Trainer):
         if not isinstance(train_dataset, torch.utils.data.IterableDataset):
             dataloader_params["sampler"] = self._get_train_sampler()
             dataloader_params["drop_last"] = self.args.dataloader_drop_last
-            dataloader_params["worker_init_fn"] = seed_worker
+            # transformers 4.54.0 changed seed_worker to seed_worker(worker_id, num_workers, rank)
+            # and wires it via partial(...) in the base Trainer. This copy-paste predates that
+            # change; bind the same partial so a map-style dataset with num_workers>0 doesn't
+            # crash with "seed_worker() missing 2 required positional arguments". Mirrors the
+            # base Trainer.get_train_dataloader in our pinned transformers exactly.
+            dataloader_params["worker_init_fn"] = partial(
+                seed_worker, num_workers=self.args.dataloader_num_workers, rank=self.args.process_index
+            )
             dataloader_params["prefetch_factor"] = self.args.dataloader_prefetch_factor
 
         return self.accelerator.prepare(DataLoader(train_dataset, **dataloader_params))

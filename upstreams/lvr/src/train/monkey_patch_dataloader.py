@@ -10,6 +10,8 @@
 # Licensed under The MIT License [see LICENSE for details]
 # --------------------------------------------------------
 
+from functools import partial
+
 import datasets
 import torch
 import transformers
@@ -47,7 +49,12 @@ def get_train_dataloader(self) -> DataLoader:
     if not isinstance(train_dataset, torch.utils.data.IterableDataset):
         dataloader_params['sampler'] = self._get_train_sampler()
         dataloader_params['drop_last'] = self.args.dataloader_drop_last
-        dataloader_params['worker_init_fn'] = seed_worker
+        # transformers 4.54.0: seed_worker now takes (worker_id, num_workers, rank); bind via
+        # partial like the base Trainer does (packed runs hit the IterableDataset branch and skip
+        # this, but a non-packed run with num_workers>0 would otherwise crash).
+        dataloader_params['worker_init_fn'] = partial(
+            seed_worker, num_workers=self.args.dataloader_num_workers, rank=self.args.process_index
+        )
 
     if self.args.enable_data_packing:
         return DataLoader(train_dataset, **dataloader_params)
