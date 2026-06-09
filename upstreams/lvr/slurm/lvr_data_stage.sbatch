@@ -47,22 +47,27 @@ if [ ! -f "$ROOT/images/$SAMPLE" ]; then
   rm -f "$DL/cot_images.tar"   # reclaim ~142GB
 fi
 
-# ---- 3. ViRL39K images (1.8GB) -> images/ViRL39K (symlink to the dir of jpgs) ----
-# JSON image paths are "ViRL39K/<file>.jpg", so images/ViRL39K must BE the jpg dir.
-# (Do NOT mkdir images/ViRL39K first — ln into an existing dir nests it wrongly.)
-if [ -z "$(ls -A $ROOT/images/ViRL39K/ 2>/dev/null)" ]; then
-  VDL=$ROOT/.cache/virl_dl; mkdir -p "$VDL"
-  [ -f "$VDL/images.zip" ] || $PY -c "from huggingface_hub import snapshot_download; snapshot_download('TIGER-Lab/ViRL39K',repo_type='dataset',allow_patterns=['images.zip'],local_dir='$VDL')"
-  [ -d "$ROOT/images/ViRL39K_unz" ] || unzip -o -q "$VDL/images.zip" -d "$ROOT/images/ViRL39K_unz"
-  IMGDIR=$(dirname "$(find "$ROOT/images/ViRL39K_unz" -maxdepth 3 -type f -name '*.jpg' | head -1)")
-  [ -z "$IMGDIR" ] && { slack_notify ":x: ViRL39K: no jpg found under ViRL39K_unz"; exit 19; }
-  rm -rf "$ROOT/images/ViRL39K"; ln -sfn "$IMGDIR" "$ROOT/images/ViRL39K"
-fi
+# ---- 3. ViRL39K images (1.8GB) -> images/ViRL39K (SYMLINK to the dir of image files) ----
+# JSON image paths are "ViRL39K/<file>" (mixed .jpg/.png), so images/ViRL39K must resolve
+# DIRECTLY onto the dir holding those files. FOOTGUN (this broke Stage-2 once): if
+# images/ViRL39K already exists as a real dir, `ln -sfn T images/ViRL39K` nests the link as
+# images/ViRL39K/<basename(T)> (one level too deep) instead of replacing it. So: download/
+# unzip if needed, then ALWAYS rm -rf the path and recreate the link unconditionally (no
+# ls-A guard — a stale dir would make it skip), and assert the result is actually a symlink.
+VDL=$ROOT/.cache/virl_dl; mkdir -p "$VDL"
+[ -f "$VDL/images.zip" ] || $PY -c "from huggingface_hub import snapshot_download; snapshot_download('TIGER-Lab/ViRL39K',repo_type='dataset',allow_patterns=['images.zip'],local_dir='$VDL')"
+[ -d "$ROOT/images/ViRL39K_unz" ] || unzip -o -q "$VDL/images.zip" -d "$ROOT/images/ViRL39K_unz"
+# files are mixed jpg/png — match both so IMGDIR resolves regardless of which appears first
+IMGDIR=$(dirname "$(find "$ROOT/images/ViRL39K_unz" -maxdepth 3 -type f \( -name '*.jpg' -o -name '*.png' \) | head -1)")
+[ -z "$IMGDIR" ] && { slack_notify ":x: ViRL39K: no jpg/png found under ViRL39K_unz"; exit 19; }
+rm -rf "$ROOT/images/ViRL39K"               # remove stale dir OR old link so the path is absent
+ln -sfn "$IMGDIR" "$ROOT/images/ViRL39K"    # absent path -> link created (not nested into a dir)
+[ -L "$ROOT/images/ViRL39K" ] || { slack_notify ":x: ViRL39K symlink not created (nested?)"; exit 20; }
 
 # ---- 4. verify sample paths resolve ----
 S1="$ROOT/images/$SAMPLE"
 S2="$ROOT/images/$($PY -c "import json;print(json.load(open('$ROOT/data/virl39k.json'))[0]['image'])")"
 [ -f "$S1" ] || { slack_notify ":x: stage1 sample missing: $S1"; exit 15; }
-[ -f "$S2" ] || { slack_notify ":warning: stage2 ViRL39K sample missing: $S2 (check layout)"; }
+[ -f "$S2" ] || { slack_notify ":x: stage2 ViRL39K sample missing: $S2 (layout/symlink) — aborting"; exit 16; }
 echo "OK: $S1 ; $S2"
 slack_notify ":white_check_mark: DONE lvr-data-stage (jobid=${SLURM_JOB_ID}) | viscot+ViRL39K staged"
