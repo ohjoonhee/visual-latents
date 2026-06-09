@@ -28,8 +28,12 @@ export CUDA_VISIBLE_DEVICES=""        # force CPU — this is a non-GPU surface 
 ROOT=/data/joonhee/lvr
 mkdir -p $ROOT/.cache/{tmp,triton,torch,torch-extensions}
 export TMPDIR=$ROOT/.cache/tmp TRITON_CACHE_DIR=$ROOT/.cache/triton TORCH_HOME=$ROOT/.cache/torch TORCH_EXTENSIONS_DIR=$ROOT/.cache/torch-extensions
-# same dual PYTHONPATH as the training job (code mixes `from src...` and `from train...`)
-export PYTHONPATH=$REPO:$REPO/src:${PYTHONPATH:-}
+# same dual PYTHONPATH as the training job (code mixes `from src...` and `from train...`),
+# PLUS $REPO/src/train: the GPU job runs `deepspeed ... src/train/train_grpo.py`, so its
+# dir is sys.path[0] and bare imports there (train_grpo L14 `from monkey_patch_forward_lvr_rl
+# import ...`) resolve. We import the module instead of script-launching it, so add that dir
+# explicitly to mirror the real run's import environment (this is harness-only, not a code change).
+export PYTHONPATH=$REPO:$REPO/src:$REPO/src/train:${PYTHONPATH:-}
 export WANDB_MODE=disabled            # preflight must never open a wandb run
 
 # auto-find the Stage-1 init exactly like lvr_stage2_3b.sbatch (full path = checkpoint-2500)
