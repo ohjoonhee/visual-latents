@@ -111,6 +111,11 @@ def qwen2_5_mixed_modality_forward_lvr_grpo(
     lvr_mask: Optional[torch.FloatTensor] = None,   # This is for RL loss computation
     lvr_states: Optional[torch.FloatTensor] = None, # This is for RL loss computation
     prompt_length: Optional[int] = None, # This is for RL loss computation
+    **kwargs,   # transformers 4.54.0 threads flash-attn varlen kwargs (cu_seq_lens_q/k,
+                # max_length_q/k) + logits_to_keep into the LM forward during generate; the
+                # base Qwen2_5_VL forward absorbs them via **kwargs. Mirror that here so
+                # `self(**model_inputs)` in _lvr_deocding_by_steps doesn't raise
+                # "unexpected keyword argument 'cu_seq_lens_q'".
 ) -> Union[Tuple, Qwen2_5_VLCausalLMOutputWithPast]:
     '''In this mode, no lvr_tokens'''
     output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -213,6 +218,7 @@ def qwen2_5_mixed_modality_forward_lvr_grpo(
         output_hidden_states=output_hidden_states,
         return_dict=return_dict,
         cache_position=cache_position,
+        **kwargs,   # thread flash-attn varlen kwargs to the decoder, exactly as the base forward
     )
 
     # check if there is lvr_head

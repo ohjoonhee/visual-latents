@@ -190,6 +190,26 @@ def main():
         assert fmt == [1.0, 0.0], f"format_reward unexpected: {fmt}"
         return f"discovered {names}; accuracy={acc} format={fmt} (math_verify OK)"
 
+    # ---- 8. FORWARD_SIG: patched GRPO forward must absorb the kwargs generate() passes ----
+    @stage("FORWARD_SIG")
+    def _forward_sig():
+        import inspect
+        from monkey_patch_forward_lvr_rl import qwen2_5_mixed_modality_forward_lvr_grpo as fwd
+        from transformers.models.qwen2_5_vl import modeling_qwen2_5_vl as M
+        base_params = inspect.signature(M.Qwen2_5_VLForConditionalGeneration.forward).parameters
+        base_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in base_params.values())
+        psig = inspect.signature(fwd)
+        patched_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in psig.parameters.values())
+        # 4.54.0 threads these into the LM forward during generate/attention:
+        needed = ["cu_seq_lens_q", "cu_seq_lens_k", "max_length_q", "max_length_k", "logits_to_keep"]
+        if base_varkw and not (patched_varkw or all(n in psig.parameters for n in needed)):
+            missing = [n for n in needed if n not in psig.parameters]
+            raise AssertionError(
+                f"{fwd.__name__} lacks **kwargs and is missing {missing} that generate() passes "
+                f"in this transformers (base Qwen2_5_VL forward accepts **kwargs) — GPU forward would "
+                f"raise 'unexpected keyword argument'")
+        return f"{fwd.__name__}: **kwargs={patched_varkw} (base **kwargs={base_varkw}) — absorbs generate's flash-attn/logits kwargs"
+
     # ---- summary ----
     print("\n========== PREFLIGHT SUMMARY ==========")
     n_fail = 0
