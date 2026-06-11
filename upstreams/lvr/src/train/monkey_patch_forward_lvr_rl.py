@@ -191,15 +191,21 @@ def qwen2_5_mixed_modality_forward_lvr_grpo(
     # if we get 4D attention mask we cannot calculate rope deltas anymore. TODO @raushan fixme
     if position_ids is None and (attention_mask is None or attention_mask.ndim == 2):
         # calculate RoPE index once per generation in the pre-fill stage only
-        if (cache_position is not None and cache_position[0] == 0) or self.rope_deltas is None:
-            position_ids, rope_deltas = self.get_rope_index(
-                input_ids, image_grid_thw, video_grid_thw, attention_mask
+        if (cache_position is not None and cache_position[0] == 0) or self.model.rope_deltas is None:
+            # 4.54.0: get_rope_index + the rope_deltas cache live on self.model (the inner
+            # Qwen2_5_VLModel), not the ForConditionalGeneration wrapper (mirrors the Stage-1
+            # forward, which runs on this same transformers). Pass second_per_grid_ts and
+            # attention_mask by keyword — 4.54.0 inserted second_per_grid_ts *before*
+            # attention_mask, so the old 4-positional call mis-bound attention_mask.
+            position_ids, rope_deltas = self.model.get_rope_index(
+                input_ids, image_grid_thw, video_grid_thw,
+                second_per_grid_ts=second_per_grid_ts, attention_mask=attention_mask
             )
-            self.rope_deltas = rope_deltas
+            self.model.rope_deltas = rope_deltas
         # then use the prev pre-calculated rope-deltas to get the correct position ids
         else:
             batch_size, seq_length, _ = inputs_embeds.shape
-            delta = cache_position[0] + self.rope_deltas if cache_position is not None else 0
+            delta = cache_position[0] + self.model.rope_deltas if cache_position is not None else 0
             position_ids = torch.arange(seq_length, device=inputs_embeds.device)
             position_ids = position_ids.view(1, -1).expand(batch_size, -1)
             if cache_position is not None:  # otherwise `deltas` is an int `0`
@@ -267,6 +273,6 @@ def qwen2_5_mixed_modality_forward_lvr_grpo(
         past_key_values=outputs.past_key_values,
         hidden_states=outputs.hidden_states,
         attentions=outputs.attentions,
-        rope_deltas=self.rope_deltas,
+        rope_deltas=self.model.rope_deltas,
         last_position_hidden_state =last_position_hidden_state
     )
