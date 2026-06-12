@@ -50,7 +50,13 @@ OUTPUT_DIR=$ROOT/ckpts/stage2${SMOKE_TAG}
 RUN_NAME="Stage2_3B_decodingBysteps_max8lvrSteps_LR5e-6_TEMP0.9_stage1Steps2500${SMOKE_TAG}"
 slack_notify ":rocket: START lvr-stage2-grpo 3B | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME} | SMOKE=$SMOKE | init=$STAGE1"
 
-deepspeed --num_gpus=4 src/train/train_grpo.py \
+# --disable_flash_attn2 True (sdpa) for Stage-2: the in-process rollout generate emits
+# flash-attn-2 varlen kwargs (cu_seq_lens_q/k) via prepare_inputs_for_generation that the
+# GRPO forward threads to the decoder; on flash-attn-2 + transformers 4.54.0 (a rollout path
+# the upstream never exercised) those corrupt attention -> NaN logits -> multinomial assert
+# (GPU job 220580). CPU forward-smoke proved sdpa generates cleanly in BOTH fp32 and bf16
+# (jobs 220595/220608); sdpa is exact attention (numerically identical to flash) and on GPU
+# dispatches to a memory-efficient backend. Stage-1 keeps flash-attn (its forward is fine).
   --run_name "$RUN_NAME" \
   --deepspeed scripts/zero2.json \
   --online_checkpoint False \
@@ -59,7 +65,7 @@ deepspeed --num_gpus=4 src/train/train_grpo.py \
   --data_path "$ROOT/data/virl39k.json" \
   --image_folder "$ROOT/images/" \
   --freeze_vision_tower True --freeze_merger True --freeze_llm False \
-  --bf16 True --fp16 False --disable_flash_attn2 False \
+  --bf16 True --fp16 False --disable_flash_attn2 True \
   --output_dir "$OUTPUT_DIR" \
   --temperature 0.9 --num_train_epochs 2 $MAXSTEPS_ARG --num_generations 8 \
   --per_device_train_batch_size 4 --gradient_accumulation_steps 2 \
