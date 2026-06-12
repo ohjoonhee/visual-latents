@@ -57,6 +57,7 @@ slack_notify ":rocket: START lvr-stage2-grpo 3B | id=${SLURM_JOB_ID} | node=${SL
 # (GPU job 220580). CPU forward-smoke proved sdpa generates cleanly in BOTH fp32 and bf16
 # (jobs 220595/220608); sdpa is exact attention (numerically identical to flash) and on GPU
 # dispatches to a memory-efficient backend. Stage-1 keeps flash-attn (its forward is fine).
+deepspeed --num_gpus=4 src/train/train_grpo.py \
   --run_name "$RUN_NAME" \
   --deepspeed scripts/zero2.json \
   --online_checkpoint False \
