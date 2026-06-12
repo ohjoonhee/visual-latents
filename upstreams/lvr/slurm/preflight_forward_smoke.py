@@ -68,10 +68,14 @@ def main():
         attn_implementation="sdpa",       # FA2 needs CUDA; sdpa runs on CPU
     )
     replace_qwen_2_5_vl_patch_emb()
-    model.config.use_cache = True
+    # match the GRPO trainer's rollout: gradient_checkpointing on forces use_cache=False, which
+    # changes the cache_position setup. The earlier use_cache=True smoke missed the
+    # _get_initial_cache_position ambiguous-bool that only surfaced on GPU; reproduce that path here.
+    model.gradient_checkpointing_enable()
+    model.config.use_cache = False
     model.eval()
     print(f"[LOAD] ok: {type(model).__name__} on {next(model.parameters()).device} "
-          f"dtype={next(model.parameters()).dtype}", flush=True)
+          f"dtype={next(model.parameters()).dtype} use_cache={model.config.use_cache} grad_ckpt=on", flush=True)
 
     # ---- dataset + the trainer's exact prompt-batching helper ----
     from qwen_vl_utils import process_vision_info

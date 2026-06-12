@@ -427,9 +427,10 @@ class QwenWithLVR(Qwen2_5_VLForConditionalGeneration):
             this_peer_finished = False
             unfinished_sequences = torch.ones(batch_size, dtype=torch.long, device=input_ids.device)
             
-            # model_kwargs = self._get_initial_cache_position(cur_len, input_ids.device, model_kwargs)
-            # again Transformer version issue
-            model_kwargs = self._get_initial_cache_position(input_ids, model_kwargs)
+            # 4.54.0 signature is (seq_length, device, model_kwargs); pop any pre-set multi-element
+            # cache_position so its truthiness check doesn't raise (ambiguous bool), then recompute.
+            model_kwargs.pop("cache_position", None)
+            model_kwargs = self._get_initial_cache_position(cur_len, input_ids.device, model_kwargs)
 
             model_forward = self.__call__
             if isinstance(model_kwargs.get("past_key_values"), Cache):
@@ -655,8 +656,8 @@ class QwenWithLVR(Qwen2_5_VLForConditionalGeneration):
             this_peer_finished = False
             unfinished_sequences = torch.ones(batch_size, dtype=torch.long, device=input_ids.device)
             
+            model_kwargs.pop("cache_position", None)   # 4.54.0: avoid ambiguous-bool on a pre-set cache_position
             model_kwargs = self._get_initial_cache_position(cur_len, input_ids.device, model_kwargs)
-            # model_kwargs = self._get_initial_cache_position(input_ids, model_kwargs)
 
             model_forward = self.__call__
             if isinstance(model_kwargs.get("past_key_values"), Cache):
@@ -923,10 +924,13 @@ class QwenWithLVR(Qwen2_5_VLForConditionalGeneration):
         batch_size, cur_len = input_ids.shape
         this_peer_finished = False
         unfinished_sequences = torch.ones(batch_size, dtype=torch.long, device=input_ids.device)
-        try:
-            model_kwargs = self._get_initial_cache_position(cur_len, input_ids.device, model_kwargs)
-        except:
-            model_kwargs = self._get_initial_cache_position(input_ids, model_kwargs)
+        # transformers 4.54.0: _get_initial_cache_position(seq_length, device, model_kwargs).
+        # A pre-set multi-element cache_position tensor makes its `if model_kwargs["cache_position"]`
+        # truthiness check raise (ambiguous bool); pop it so cache_position is recomputed fresh for
+        # the prefill. (Replaces a try/except band-aid whose `except` fell back to a pre-4.54 2-arg
+        # signature -> "missing 1 required positional argument: 'model_kwargs'".)
+        model_kwargs.pop("cache_position", None)
+        model_kwargs = self._get_initial_cache_position(cur_len, input_ids.device, model_kwargs)
 
         model_forward = self.__call__
         if isinstance(model_kwargs.get("past_key_values"), Cache):
