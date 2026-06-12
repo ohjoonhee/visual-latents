@@ -34,6 +34,10 @@ STAGE1=$(find $ROOT/ckpts/stage1 -maxdepth 3 -type d -name 'checkpoint-2500' 2>/
 [ -z "$STAGE1" ] && { slack_notify ":x: forward-smoke: stage1 checkpoint-2500 not found under $ROOT/ckpts/stage1"; exit 14; }
 slack_notify ":test_tube: START lvr-stage2-FORWARD-SMOKE (cpu) | id=${SLURM_JOB_ID} | node=${SLURMD_NODENAME} | init=$STAGE1"
 
+# sweep batch sizes: n=1 is unpadded; n>=2 with mixed prompt lengths -> left-padding.
+# The first GPU run died with a multinomial 'inf/nan' assert during the batched rollout;
+# this sweep tests whether left-padding (fully-masked attention rows -> NaN) reproduces it
+# on CPU. DTYPE/NLIST overridable: e.g. DTYPE=bf16 NLIST=1,4 sb ...
 python slurm/preflight_forward_smoke.py \
   --checkpoint "$STAGE1" \
   --data_path "$ROOT/data/virl39k.json" \
@@ -42,8 +46,9 @@ python slurm/preflight_forward_smoke.py \
   --image_min_pixels $((128*28*28)) \
   --image_max_pixels $((2560*28*28)) \
   --lvr_steps 8 \
-  --max_new_tokens 8 \
-  --n_prompts 1
+  --max_new_tokens 4 \
+  --dtype "${DTYPE:-fp32}" \
+  --n_prompts_list "${NLIST:-1,2,4}"
 rc=$?
 [ $rc -eq 0 ] && slack_notify ":white_check_mark: lvr-stage2-FORWARD-SMOKE GREEN — patched forward+rope execute on CPU, safe for GPU" \
               || slack_notify ":x: lvr-stage2-FORWARD-SMOKE FAILED rc=$rc — runtime forward bug, fix before GPU (logs/launch_${SLURM_JOB_ID}.log)"
