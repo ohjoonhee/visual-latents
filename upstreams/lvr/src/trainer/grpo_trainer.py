@@ -1016,7 +1016,7 @@ class QwenGRPOTrainer(Trainer):
 
             # Prepare inputs for full forward (this builds the autograd graph once)
             model_kwargs = {}  # adapt: if your trainer uses special _get_initial_cache_position do that
-            model_kwargs = getattr(model, "_get_initial_cache_position", lambda i, k: k)(prompt_completion_ids, model_kwargs)
+            model_kwargs = getattr(model, "_get_initial_cache_position", lambda s, d, k: k)(prompt_completion_ids.shape[1], prompt_completion_ids.device, model_kwargs)  # 4.54.0 sig: (seq_length, device, model_kwargs)
             model_inputs = self.model.prepare_inputs_for_generation(prompt_completion_ids, **model_kwargs)  # fresh
             model_inputs.update(multimodal_inputs)
             model_inputs.update(
@@ -1378,7 +1378,7 @@ class QwenGRPOTrainer(Trainer):
 
             # To be safe, copy/paste your cache init call
             model_kwargs = {}  # adapt: if your trainer uses special _get_initial_cache_position do that
-            model_kwargs = getattr(model, "_get_initial_cache_position", lambda i, k: k)(cur_input_ids, model_kwargs)
+            model_kwargs = getattr(model, "_get_initial_cache_position", lambda s, d, k: k)(cur_input_ids.shape[1], cur_input_ids.device, model_kwargs)  # 4.54.0 sig: (seq_length, device, model_kwargs)
 
             # loop: mirror your decode loop exactly for switch/quota updates
             cur_len = cur_input_ids.shape[1]
@@ -1519,7 +1519,7 @@ class QwenGRPOTrainer(Trainer):
 
         # initial cache / model kwargs (match generation)
         model_kwargs = {}
-        model_kwargs = self.model._get_initial_cache_position(prompt_ids, model_kwargs)
+        model_kwargs = self.model._get_initial_cache_position(prompt_ids.shape[1], prompt_ids.device, model_kwargs)  # 4.54.0 sig: (seq_length, device, model_kwargs)
 
         # cur_input_ids starts as prompt; we will append gold tokens teacher-forcing
         cur_input_ids = prompt_ids.clone()
