@@ -1015,7 +1015,9 @@ class QwenGRPOTrainer(Trainer):
             )
 
             # Prepare inputs for full forward (this builds the autograd graph once)
-            model_kwargs = {}  # adapt: if your trainer uses special _get_initial_cache_position do that
+            # 4.54.0: Qwen2.5-VL prepare_inputs_for_generation derives position_ids from attention_mask;
+            # without it position_ids stays None -> "'NoneType' object is not subscriptable".
+            model_kwargs = {"attention_mask": attention_mask}  # adapt: if your trainer uses special _get_initial_cache_position do that
             model_kwargs = getattr(model, "_get_initial_cache_position", lambda s, d, k: k)(prompt_completion_ids.shape[1], prompt_completion_ids.device, model_kwargs)  # 4.54.0 sig: (seq_length, device, model_kwargs)
             model_inputs = self.model.prepare_inputs_for_generation(prompt_completion_ids, **model_kwargs)  # fresh
             model_inputs.update(multimodal_inputs)
@@ -1377,7 +1379,9 @@ class QwenGRPOTrainer(Trainer):
             this_peer_finished = False
 
             # To be safe, copy/paste your cache init call
-            model_kwargs = {}  # adapt: if your trainer uses special _get_initial_cache_position do that
+            # 4.54.0: prepare_inputs_for_generation derives position_ids from attention_mask; pass it
+            # (else position_ids is None -> subscript crash). _update_model_kwargs extends it each step.
+            model_kwargs = {"attention_mask": cur_attention_mask}  # adapt: if your trainer uses special _get_initial_cache_position do that
             model_kwargs = getattr(model, "_get_initial_cache_position", lambda s, d, k: k)(cur_input_ids.shape[1], cur_input_ids.device, model_kwargs)  # 4.54.0 sig: (seq_length, device, model_kwargs)
 
             # loop: mirror your decode loop exactly for switch/quota updates
@@ -1518,7 +1522,9 @@ class QwenGRPOTrainer(Trainer):
         lvr_mask = torch.zeros(B, max_completion_steps, dtype=torch.bool, device='cpu')
 
         # initial cache / model kwargs (match generation)
-        model_kwargs = {}
+        # 4.54.0: prepare_inputs_for_generation derives position_ids from attention_mask; pass it
+        # (else position_ids is None -> subscript crash). _update_model_kwargs extends it each step.
+        model_kwargs = {"attention_mask": prompt_mask}
         model_kwargs = self.model._get_initial_cache_position(prompt_ids.shape[1], prompt_ids.device, model_kwargs)  # 4.54.0 sig: (seq_length, device, model_kwargs)
 
         # cur_input_ids starts as prompt; we will append gold tokens teacher-forcing
