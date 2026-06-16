@@ -28,6 +28,8 @@ def main():
     ap.add_argument("--lvr_steps", type=int, default=8)
     ap.add_argument("--max_new_tokens", type=int, default=160)
     ap.add_argument("--n_prompts", type=int, default=4)
+    ap.add_argument("--dtype", choices=["fp32", "bf16"], default="fp32",
+                    help="bf16 matches the GPU rollout; fp32 is CPU-stable")
     args = ap.parse_args()
 
     import torch
@@ -43,11 +45,12 @@ def main():
     from src.params import DataArguments
     from src.train.reward_funcs import accuracy_reward, format_reward
 
-    print(f"[load] {args.checkpoint} (sdpa/fp32/CPU, grad_ckpt, use_cache=False)", flush=True)
+    print(f"[load] {args.checkpoint} (sdpa/{args.dtype}/CPU, grad_ckpt, use_cache=False)", flush=True)
     processor = AutoProcessor.from_pretrained(args.checkpoint)
     config = AutoConfig.from_pretrained(args.checkpoint, trust_remote_code=True)
     replace_qwen2_5_with_mixed_modality_forward_lvr_rl()
-    model = QwenWithLVR.from_pretrained(args.checkpoint, config=config, torch_dtype=torch.float32, attn_implementation="sdpa")
+    _dtype = torch.bfloat16 if args.dtype == "bf16" else torch.float32
+    model = QwenWithLVR.from_pretrained(args.checkpoint, config=config, torch_dtype=_dtype, attn_implementation="sdpa")
     replace_qwen_2_5_vl_patch_emb()
     model.gradient_checkpointing_enable()
     model.config.use_cache = False

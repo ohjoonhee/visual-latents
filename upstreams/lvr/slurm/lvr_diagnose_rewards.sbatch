@@ -41,7 +41,8 @@ python slurm/diagnose_rewards.py \
   --image_max_pixels $((2560*28*28)) \
   --lvr_steps 8 \
   --max_new_tokens "${MAXNEW:-160}" \
-  --n_prompts "${NPROMPTS:-4}"
+  --n_prompts "${NPROMPTS:-4}" \
+  --dtype "${DTYPE:-fp32}"
 rc=$?
 [ $rc -eq 0 ] && slack_notify ":white_check_mark: lvr-reward-diagnosis done (see logs/launch_${SLURM_JOB_ID}.log)" \
               || slack_notify ":x: lvr-reward-diagnosis rc=$rc"
