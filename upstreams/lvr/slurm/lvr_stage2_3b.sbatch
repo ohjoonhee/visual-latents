@@ -38,6 +38,14 @@ SMOKE="${SMOKE:-0}"
 # SMOKE run) instead of requiring the full checkpoint-2500.
 MAXSTEPS_ARG=""; SAVE_STEPS=100; SAVE_LIMIT=50; SMOKE_TAG=""
 if [ "$SMOKE" = "1" ]; then MAXSTEPS_ARG="--max_steps 8"; SAVE_STEPS=8; SAVE_LIMIT=3; SMOKE_TAG="_SMOKE"; fi
+# DEBUG_COMPLETIONS=1: short full-init run that dumps every rollout completion+solution via
+# reward_funcs' DEBUG_MODE, to inspect the ACTUAL GPU rollout text behind reward==0 (the CPU
+# diagnosis showed clean format; the GPU rollout is systematically malformed). Keeps
+# init=checkpoint-2500 (the SFT model). STEPS overrides the step count (default 2).
+if [ "${DEBUG_COMPLETIONS:-0}" = "1" ]; then
+  MAXSTEPS_ARG="--max_steps ${STEPS:-2}"; SAVE_STEPS=100000; SAVE_LIMIT=1; SMOKE_TAG="_DBG"
+  export DEBUG_MODE=true LOG_PATH=$ROOT/debug_completions_${SLURM_JOB_ID:-dbg}.log
+fi
 
 # auto-find Stage-1 init: exact checkpoint-2500 (full) or latest any checkpoint-* (smoke)
 if [ "$SMOKE" = "1" ]; then
