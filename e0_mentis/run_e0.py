@@ -36,11 +36,18 @@ PLACEHOLDER = re.compile(r"<(images visual cot|image\s+[^>]+|text\s+[^>]+)>")
 
 def resolve(ref: str, puzzle_dir: Path, level_dir: Path) -> Path:
     """Metadata paths are relative to the puzzle dir in some tasks and to the
-    level dir in others (hinge-folding stores 'puzzle_0001/cot_00.png')."""
+    level dir in others (hinge-folding stores 'puzzle_0001/cot_00.png').
+
+    form-board additionally records a puzzle-id prefix that is not on disk —
+    metadata says '1_cot_00.png', the file is 'cot_00.png' — so try the
+    prefix-stripped basename as a last resort (upstream metadata bug).
+    """
+    cands = [ref, re.sub(r"(^|/)\d+_", r"\1", ref)]
     for base in (puzzle_dir, level_dir):
-        p = (base / ref).resolve()
-        if p.exists():
-            return p
+        for c in cands:
+            p = (base / c).resolve()
+            if p.exists():
+                return p
     raise FileNotFoundError(f"{ref!r} not found under {puzzle_dir} or {level_dir}")
 
 
