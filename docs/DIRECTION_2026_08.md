@@ -93,14 +93,57 @@ parameters — should be TRT-*sensitive*. That is a claim that can be killed in 
 
 ---
 
+## 3b. Update, same day: what MentisOculi's released data already shows
+
+Pulled from `results/results_table.csv` on `master` (verified; the repo's default branch is `master`, not `main`).
+
+Rush Hour is the one task carrying **both** an image arm (`simple`) and a symbolic-text arm (`simple_text`):
+
+| Level | Gemini-3-Pro image | Gemini-3-Pro **text** | GPT-5.1 image | GPT-5.1 **text** | humans |
+|---|---|---|---|---|---|
+| 3 | 0.267 | **0.900** | 0.267 | **0.931** | 0.847 |
+| 4 | 0.300 | **0.800** | 0.033 | **0.714** | 0.660 |
+| 5 | 0.100 | **0.633** | 0.000 | **0.625** | 0.560 |
+
+*(n=30/cell, 95% CIs in the file.)*
+
+**This cuts against the premise as originally stated.** Given the spatial state as *symbols*, models go from
+far below human to **above** human average. Given the same state as *pixels*, they collapse. For this task
+language is not lossy — symbolization is a rescue. The bottleneck is **extracting spatial state from the
+image**, not expressing the reasoning.
+
+Independent corroboration landed 2026-08-10: **Thinking With Tools, Not With Pixels** (2608.09682) finds the
+structured text returned by a tool call carries more of the reasoning signal than the image does. Two
+unrelated lines of evidence now point at perception→state extraction as the real gap.
+(See also *The Illusion of Visual Tool-Use*, 2608.06270 — the tool-use analogue of Ablate-to-Validate.)
+
+**What survives, and it is sharper than the original thesis.** `simple_text` appears **only** for Rush Hour —
+a 6×6 grid whose state is trivially symbolizable. So do `icl_intermediate_images` (the oracle arm), `tool_use`,
+and the human baseline. Form-board, hinge-folding and paper-fold have *only* `simple` and `generate_images`.
+The benchmark's own coverage traces the boundary of verbalizability: the arms exist exactly where symbolic
+encoding was easy to write, and are missing exactly where it is hard.
+
+**Revised question for E0:** does symbolization rescue the *geometric* tasks too?
+- If yes → the modality gap is perceptual; latent reasoning should target perception→state extraction, and
+  the "language can't express it" framing should be dropped.
+- If no, or if no faithful symbolic encoding can be written → that is where genuine non-verbalizability lives,
+  and it is measurable rather than asserted.
+
+**Anomaly to check first:** `mirage` on sliding-puzzle scores 0.933 / 0.833 / 0.700 / 0.767 / 0.800 across
+levels 1–5 — nearly flat against difficulty, and above Gemini-3-Pro on the same task. Flat-vs-difficulty is the
+classic shortcut signature and the first thing to point TRT at.
+
 ## 4. First experiments
 
 Ordered so that the cheapest one can kill the whole programme.
 
 ### E0 — Oracle-format dissociation (inference only, no training, ~1 A6000-day)
 
-Take a procedurally generated task family with ground-truth intermediate state. Give the model, in
-context, the *same* information in four formats:
+**Target the geometric tasks — `paper-fold`, `hinge-folding`, `form-board` — not Rush Hour.** Rush Hour
+already has all four arms and has already answered the question there (§3b); the geometric tasks have only
+`simple` and `generate_images`, which is precisely the gap.
+
+Give the model, in context, the *same* ground-truth intermediate state in four formats:
 
 | Arm | What the model is handed | Role |
 |---|---|---|
@@ -179,6 +222,36 @@ as a ready pictorially-supervised P-arm baseline — it is already trained towar
 From our own repo: `phase0_monet_probe/ablation.py` metric conventions, the `pivot_a/` trainer's
 `reg_kind` / `loss_form` selectors, and the LVR 3B SFT checkpoint (`checkpoints/lvr-3b-sft-step2500`)
 as a ready pictorially-supervised P-arm baseline — it is already trained toward ROI patch embeddings.
+
+## 5b. Baselines — what can actually be relied on
+
+**The reliable baseline is not another paper's number.** *Ablate-to-Validate* showed accuracy survives
+corrupting the latent content, so a published accuracy carries no evidence that the mechanism works. The
+load-bearing baseline is **your own weights with the channel ablated**.
+
+**Reviewer-expected control arms**, converged across 2605.21642 / 2606.01287 / 2606.05753 / 2602.02465:
+
+1. Content-replacement sweep on the latent channel — zero / random / first-repeat / oracle (TRT).
+2. Component-isolated ablation — latent slots vs. boundary markers vs. format alone (2606.01287 found
+   markers alone preserve 78–100% of the gain).
+3. **Probe-based decodability** of the latent — *not* cosine/alignment to a visual target (PRISM, 2606.05753).
+4. Oracle/ground-truth visual condition as an upper bound, separate from self-generated imagery.
+5. Matched token-budget / context-length control, to rule out "more compute."
+
+**Note: TRT code is not released.** The paper says "code will be released" at
+`tjazhang.github.io/ablate_to_validate`; no live repo found as of 2026-08-13. TRT is simple enough to
+reimplement — four replacement modes with prompt/image/budget/decoding held fixed — but budget for it and
+do not plan around an upstream drop.
+
+**External numbers we can cite as-is** (MentisOculi, n=30/cell with 95% CIs):
+`simple` and `generate_images` cover all five tasks; `simple_text`, `icl`, `icl_intermediate_images`,
+`evolved`, `tool_use`, `video_generation` and the `humans` baseline are **Rush Hour only**. Models present
+include gemini-3-pro-preview, gpt-5.1, qwen3-vl-235b-a22b-thinking, emu3.5, mirage, veo-3.1, wan-2.6.
+
+**Internal anchors that reproduced** (use these, not the Pivot A geometry numbers):
+released LVR-7B (V\* 81.68@s8, MMVP 72.0 — matched paper to ≤0.6pt), Monet stage-2 (cos 0.377, util +2.05),
+and `checkpoints/lvr-3b-sft-step2500` (V\* 65.97/65.45/65.45, MMVP 55.67/56.33/57.33) as a ready
+pictorially-supervised P-arm.
 
 ## 6. Open risks
 
